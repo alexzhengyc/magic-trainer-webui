@@ -5,3 +5,9 @@ kohya_ss/build
 kohya_ss/dist
 kohya_ss/library.egg-info
 
+kohya_ss/logs
+kohya_ss/wd14_tagger_model
+kohya_ss/wandb
+kohya_ss/.git
+
+.vscode
