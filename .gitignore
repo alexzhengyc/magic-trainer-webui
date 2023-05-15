@@ -1,0 +1,7 @@
+*.pyc
+
+# build files
+kohya_ss/build
+kohya_ss/dist
+kohya_ss/library.egg-info
+
