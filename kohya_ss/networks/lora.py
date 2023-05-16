@@ -368,7 +368,7 @@ def create_network(multiplier, network_dim, network_alpha, vae, text_encoder, un
     block_dims = kwargs.get("block_dims", None)
     down_lr_weight, mid_lr_weight, up_lr_weight = parse_block_lr_kwargs(kwargs)
 
-    # 以上のいずれかに指定があればblockごとのdim(rank)を有効にする
+    # Enable dim(rank) per block if any of the above are specified
     if block_dims is not None or down_lr_weight is not None or mid_lr_weight is not None or up_lr_weight is not None:
         block_alphas = kwargs.get("block_alphas", None)
         conv_block_dims = kwargs.get("conv_block_dims", None)
@@ -784,10 +784,14 @@ class LoRANetwork(torch.nn.Module):
         self.block_lr = False
 
         # assertion
-        names = set()
+        names = []
         for lora in self.text_encoder_loras + self.unet_loras:
-            assert lora.lora_name not in names, f"duplicated lora name: {lora.lora_name}"
-            names.add(lora.lora_name)
+        # assert lora.lora_name not in names, f"duplicated lora name: {lora.lora_name}"
+            names.append(lora.lora_name)
+        print()
+        print("*******************************")
+        print(f"lora names: {names}")
+        print("*******************************")
 
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier

@@ -20,8 +20,9 @@ with open(req_file) as file:
             print(e)
             print(f'Warning: Failed to install {package}, some preprocessors may not work.')
 
-# cd stable-diffusion-webui/extensions/lora-magic-trainer/kohya_ss
-# python setup.py install
-os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "kohya_ss"))
-subprocess.run(["python", "setup.py", "install"])
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
+# exam if the build dir and dist dir exists
+ext_dir = os.path.dirname(os.path.realpath(__file__))
+if not os.path.exists(os.path.join(ext_dir, "kohya_ss", "build")) or not os.path.exists(os.path.join(ext_dir, "kohya_ss", "dist")):
+    os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "kohya_ss"))
+    subprocess.run(["python", "setup.py", "install"])
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))

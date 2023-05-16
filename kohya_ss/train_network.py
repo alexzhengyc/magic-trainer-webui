@@ -28,7 +28,7 @@ import library.custom_train_functions as custom_train_functions
 from library.custom_train_functions import apply_snr_weight, get_weighted_text_embeddings, pyramid_noise_like, apply_noise_offset
 
 
-# TODO 他のスクリプトと共通化する
+# TODO Commonize with other scripts
 def generate_step_logs(args: argparse.Namespace, current_loss, avr_loss, lr_scheduler):
     logs = {"loss/current": current_loss, "loss/average": avr_loss}
 
@@ -77,7 +77,7 @@ def train(args):
 
     tokenizer = train_util.load_tokenizer(args)
 
-    # データセットを準備する
+    # Preparing the dataset
     blueprint_generator = BlueprintGenerator(ConfigSanitizer(True, True, True))
     if use_user_config:
         print(f"Load dataset config from {args.dataset_config}")
@@ -134,21 +134,21 @@ def train(args):
             train_dataset_group.is_latent_cacheable()
         ), "when caching latents, either color_aug or random_crop cannot be used / latentをキャッシュするときはcolor_augとrandom_cropは使えません"
 
-    # acceleratorを準備する
+    # accelerator prepare
     print("prepare accelerator")
     accelerator, unwrap_model = train_util.prepare_accelerator(args)
     is_main_process = accelerator.is_main_process
 
-    # mixed precisionに対応した型を用意しておき適宜castする
+    # Prepare a type corresponding to mixed precision and cast it accordingly.
     weight_dtype, save_dtype = train_util.prepare_dtype(args)
 
-    # モデルを読み込む
+    # Load a model
     text_encoder, vae, unet, _ = train_util.load_target_model(args, weight_dtype, accelerator)
 
-    # モデルに xformers とか memory efficient attention を組み込む
+    # Incorporate xformers and memory efficient attention into the model
     train_util.replace_unet_modules(unet, args.mem_eff_attn, args.xformers)
 
-    # 学習を準備する
+    # prepare training
     if cache_latents:
         vae.to(accelerator.device, dtype=weight_dtype)
         vae.requires_grad_(False)
@@ -199,10 +199,10 @@ def train(args):
         text_encoder.gradient_checkpointing_enable()
         network.enable_gradient_checkpointing()  # may have no effect
 
-    # 学習に必要なクラスを準備する
+    # Prepare classes for learning
     print("prepare optimizer, data loader etc.")
 
-    # 後方互換性を確保するよ
+    # ensure backward compatibility.
     try:
         trainable_params = network.prepare_optimizer_params(args.text_encoder_lr, args.unet_lr, args.learning_rate)
     except TypeError:
@@ -213,8 +213,8 @@ def train(args):
 
     optimizer_name, optimizer_args, optimizer = train_util.get_optimizer(args, trainable_params)
 
-    # dataloaderを準備する
-    # DataLoaderのプロセス数：0はメインプロセスになる
+    # Prepare dataloader
+    # Number of DataLoader processes: 0 is the main process
     n_workers = min(args.max_data_loader_n_workers, os.cpu_count() - 1)  # cpu_count-1 ただし最大で指定された数まで
 
     train_dataloader = torch.utils.data.DataLoader(
@@ -226,21 +226,21 @@ def train(args):
         persistent_workers=args.persistent_data_loader_workers,
     )
 
-    # 学習ステップ数を計算する
+    # Calculate the number of learning steps
     if args.max_train_epochs is not None:
         args.max_train_steps = args.max_train_epochs * math.ceil(
             len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps
         )
         if is_main_process:
-            print(f"override steps. steps for {args.max_train_epochs} epochs is / 指定エポックまでのステップ数: {args.max_train_steps}")
+            print(f"override steps. steps for {args.max_train_epochs} epochs is: {args.max_train_steps}")
 
-    # データセット側にも学習ステップを送信
+    # Send training steps to dataset side as well
     train_dataset_group.set_max_train_steps(args.max_train_steps)
 
-    # lr schedulerを用意する
+    # Prepare lr scheduler
     lr_scheduler = train_util.get_scheduler_fix(args, optimizer, accelerator.num_processes)
 
-    # 実験的機能：勾配も含めたfp16学習を行う　モデル全体をfp16にする
+    # Experimental function: fp16 learning including gradients Make the whole model fp16
     if args.full_fp16:
         assert (
             args.mixed_precision == "fp16"
@@ -248,7 +248,7 @@ def train(args):
         print("enable full fp16 training.")
         network.to(weight_dtype)
 
-    # acceleratorがなんかよろしくやってくれるらしい
+    # Prepare components by accelerator 
     if train_unet and train_text_encoder:
         unet, text_encoder, network, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, text_encoder, network, optimizer, train_dataloader, lr_scheduler
@@ -288,33 +288,33 @@ def train(args):
         vae.eval()
         vae.to(accelerator.device, dtype=weight_dtype)
 
-    # 実験的機能：勾配も含めたfp16学習を行う　PyTorchにパッチを当ててfp16でのgrad scaleを有効にする
+    # Experimental feature: fp16 learning including gradient Patch PyTorch to enable grad scale in fp16
     if args.full_fp16:
         train_util.patch_accelerator_for_fp16_training(accelerator)
 
-    # resumeする
+    # resume
     train_util.resume_from_local_or_hf_if_specified(accelerator, args)
 
-    # epoch数を計算する
+    # epoch calculation
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
     if (args.save_n_epoch_ratio is not None) and (args.save_n_epoch_ratio > 0):
         args.save_every_n_epochs = math.floor(num_train_epochs / args.save_n_epoch_ratio) or 1
 
-    # 学習する
+    # training parameters
     # TODO: find a way to handle total batch size when there are multiple datasets
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
 
     if is_main_process:
-        print("running training / 学習開始")
-        print(f"  num train images * repeats / 学習画像の数×繰り返し回数: {train_dataset_group.num_train_images}")
-        print(f"  num reg images / 正則化画像の数: {train_dataset_group.num_reg_images}")
-        print(f"  num batches per epoch / 1epochのバッチ数: {len(train_dataloader)}")
-        print(f"  num epochs / epoch数: {num_train_epochs}")
-        print(f"  batch size per device / バッチサイズ: {', '.join([str(d.batch_size) for d in train_dataset_group.datasets])}")
+        print("running training ")
+        print(f"  num train images * repeats: {train_dataset_group.num_train_images}")
+        print(f"  num reg images * repeats: {train_dataset_group.num_reg_images}")
+        print(f"  num batches per epoch : {len(train_dataloader)}")
+        print(f"  num epochs : {num_train_epochs}")
+        print(f"  batch size per device : {', '.join([str(d.batch_size) for d in train_dataset_group.datasets])}")
         # print(f"  total train batch size (with parallel & distributed & accumulation) / 総バッチサイズ（並列学習、勾配合計含む）: {total_batch_size}")
-        print(f"  gradient accumulation steps / 勾配を合計するステップ数 = {args.gradient_accumulation_steps}")
-        print(f"  total optimization steps / 学習ステップ数: {args.max_train_steps}")
+        print(f"  gradient accumulation steps  = {args.gradient_accumulation_steps}")
+        print(f"  total optimization steps : {args.max_train_steps}")
 
     # TODO refactor metadata creation and move to util
     metadata = {
@@ -430,9 +430,9 @@ def train(args):
 
             # merge tag frequency:
             for ds_dir_name, ds_freq_for_dir in dataset.tag_frequency.items():
-                # あるディレクトリが複数のdatasetで使用されている場合、一度だけ数える
-                # もともと繰り返し回数を指定しているので、キャプション内でのタグの出現回数と、それが学習で何度使われるかは一致しない
-                # なので、ここで複数datasetの回数を合算してもあまり意味はない
+                # If a directory is used in multiple datasets, count only once
+                # Since we originally specified the number of iterations, the number of times a tag appears in a caption does not correspond to how many times it is used in the learning
+                # so adding up the number of times in multiple datasets does not make much sense here
                 if ds_dir_name in tag_frequency:
                     continue
                 tag_frequency[ds_dir_name] = ds_freq_for_dir
@@ -570,7 +570,7 @@ def train(args):
                     if "latents" in batch and batch["latents"] is not None:
                         latents = batch["latents"].to(accelerator.device)
                     else:
-                        # latentに変換
+                        # latent 
                         latents = vae.encode(batch["images"].to(dtype=weight_dtype)).latent_dist.sample()
                     latents = latents * 0.18215
                 b_size = latents.shape[0]
@@ -623,7 +623,7 @@ def train(args):
                 if args.min_snr_gamma:
                     loss = apply_snr_weight(loss, timesteps, noise_scheduler, args.min_snr_gamma)
 
-                loss = loss.mean()  # 平均なのでbatch_sizeで割る必要なし
+                loss = loss.mean()  # No need to divide by batch_size since it is an average
 
                 accelerator.backward(loss)
                 if accelerator.sync_gradients and args.max_grad_norm != 0.0:
@@ -643,7 +643,7 @@ def train(args):
                     accelerator, args, None, global_step, accelerator.device, vae, tokenizer, text_encoder, unet
                 )
 
-                # 指定ステップごとにモデルを保存
+                # Save model at each specified step
                 if args.save_every_n_steps is not None and global_step % args.save_every_n_steps == 0:
                     accelerator.wait_for_everyone()
                     if accelerator.is_main_process:
@@ -682,7 +682,7 @@ def train(args):
 
         accelerator.wait_for_everyone()
 
-        # 指定エポックごとにモデルを保存
+        # Save model for each specified epoch
         if args.save_every_n_epochs is not None:
             saving = (epoch + 1) % args.save_every_n_epochs == 0 and (epoch + 1) < num_train_epochs
             if is_main_process and saving:
@@ -712,7 +712,7 @@ def train(args):
     if is_main_process and args.save_state:
         train_util.save_state_on_train_end(args, accelerator)
 
-    del accelerator  # この後メモリを使うのでこれは消す
+    del accelerator  # clean up accelerator
 
     if is_main_process:
         ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
@@ -737,14 +737,14 @@ def setup_parser() -> argparse.ArgumentParser:
         type=str,
         default="safetensors",
         choices=[None, "ckpt", "pt", "safetensors"],
-        help="format to save the model (default is .safetensors) / モデル保存時の形式（デフォルトはsafetensors）",
+        help="format to save the model (default is .safetensors) ",
     )
 
-    parser.add_argument("--unet_lr", type=float, default=None, help="learning rate for U-Net / U-Netの学習率")
-    parser.add_argument("--text_encoder_lr", type=float, default=None, help="learning rate for Text Encoder / Text Encoderの学習率")
+    parser.add_argument("--unet_lr", type=float, default=None, help="learning rate for U-Net")
+    parser.add_argument("--text_encoder_lr", type=float, default=None, help="learning rate for Text Encoder")
 
-    parser.add_argument("--network_weights", type=str, default=None, help="pretrained weights for network / 学習するネットワークの初期重み")
-    parser.add_argument("--network_module", type=str, default=None, help="network module to train / 学習対象のネットワークのモジュール")
+    parser.add_argument("--network_weights", type=str, default=None, help="pretrained weights for network ")
+    parser.add_argument("--network_module", type=str, default=None, help="network module to train ")
     parser.add_argument(
         "--network_dim", type=int, default=None, help="network dimensions (depends on each network) / モジュールの次元数（ネットワークにより定義は異なります）"
     )
@@ -752,22 +752,22 @@ def setup_parser() -> argparse.ArgumentParser:
         "--network_alpha",
         type=float,
         default=1,
-        help="alpha for LoRA weight scaling, default 1 (same as network_dim for same behavior as old version) / LoRaの重み調整のalpha値、デフォルト1（旧バージョンと同じ動作をするにはnetwork_dimと同じ値を指定）",
+        help="alpha for LoRA weight scaling, default 1 (same as network_dim for same behavior as old version) ",
     )
     parser.add_argument(
-        "--network_args", type=str, default=None, nargs="*", help="additional argmuments for network (key=value) / ネットワークへの追加の引数"
+        "--network_args", type=str, default=None, nargs="*", help="additional argmuments for network (key=value) "
     )
-    parser.add_argument("--network_train_unet_only", action="store_true", help="only training U-Net part / U-Net関連部分のみ学習する")
+    parser.add_argument("--network_train_unet_only", action="store_true", help="only training U-Net part ")
     parser.add_argument(
-        "--network_train_text_encoder_only", action="store_true", help="only training Text Encoder part / Text Encoder関連部分のみ学習する"
+        "--network_train_text_encoder_only", action="store_true", help="only training Text Encoder part "
     )
     parser.add_argument(
-        "--training_comment", type=str, default=None, help="arbitrary comment string stored in metadata / メタデータに記録する任意のコメント文字列"
+        "--training_comment", type=str, default=None, help="arbitrary comment string stored in metadata"
     )
     parser.add_argument(
         "--dim_from_weights",
         action="store_true",
-        help="automatically determine dim (rank) from network_weights / dim (rank)をnetwork_weightsで指定した重みから自動で決定する",
+        help="automatically determine dim (rank) from network_weights ",
     )
 
     return parser

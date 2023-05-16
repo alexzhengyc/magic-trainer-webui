@@ -43,14 +43,13 @@ class Lora:
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
         self.resolution = kwargs.get("resolution", 512)
         self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
-        self.save_n_epochs_ratio = kwargs.get("save_n_epochs_ratio")
+        self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 2)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
 
 
         ## TODO: change to dir in stable-diffusion-webui
         self.project_name = self.dir_name
-        # self.root_dir = "/root/alex-trainer"
         self.output_dir = "/root/autodl-tmp/training"
         self.dataset_dir = "/root/autodl-tmp/dataset"
         self.save_model_dir = "/root/autodl-tmp/models/Lora"
@@ -542,8 +541,8 @@ class Lora:
                 "save_every_n_epochs": self.save_every_n_epochs
                 if self.save_every_n_epochs
                 else None,
-                "save_n_epoch_ratio": self.save_n_epochs_ratio
-                if self.save_n_epochs_ratio
+                "save_n_epoch_ratio": self.save_n_epoch_ratio
+                if self.save_n_epoch_ratio
                 else None,
                 "save_last_n_epochs": None,
                 "save_state": None,
@@ -674,10 +673,10 @@ def setup_parser() -> argparse.ArgumentParser:
             "1 chenweiting man in white shirt",
             "1 chenweiting man in black jacket",
         ],
-        help="只训练Text Encoder部分",
+        help="a list of prompts",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
-    parser.add_argument("--save_n_epochs_ratio", type=float, default="0.5", help="")
+    parser.add_argument("--save_n_epoch_ratio", type=float, default="1", help="")
 
     return parser
 
