@@ -9,7 +9,7 @@ from scripts.utilities import args_to_gradio, load_args_template, options_to_gra
 
 
 def title():
-    return "alex lora trainer"
+    return "lora magic trainer"
 
 
 def create_ui():
@@ -29,7 +29,7 @@ def create_ui():
         init_runner = initialize_runner(script_file, get_templates, get_options)
         with gr.Box():
             with gr.Row():
-                init_id = presets.create_ui("alex lora trainer", get_templates, get_options)
+                init_id = presets.create_ui("lora magic trainer", get_templates, get_options)
         with gr.Row():
             with gr.Group():
                 with gr.Box():
