@@ -34,6 +34,13 @@ with open(req_file) as file:
 
 # exam if the build dir and dist dir exists
 ext_dir = os.path.dirname(os.path.realpath(__file__))
+# go to the parent dir of ext_dir
+webui_ext_dir = os.path.dirname(ext_dir)
+WEBUI_DIR = os.path.dirname(webui_ext_dir)
+
+# def get_webui_path():
+#     return WEBUI_DIR
+
 if not os.path.exists(os.path.join(ext_dir, "kohya_ss", "build")) or not os.path.exists(os.path.join(ext_dir, "kohya_ss", "dist")):
     os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "kohya_ss"))
     subprocess.run(["python", "setup.py", "install"])
