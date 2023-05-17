@@ -625,9 +625,6 @@ class Lora:
 def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
-    # config_util.add_config_arguments(parser)
-    # custom_train_functions.add_custom_train_arguments(parser)
-
     parser.add_argument(
         "--save_model_as",
         type=str,
@@ -645,7 +642,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--sd_path",
         type=str,
-        default="/root/autodl-tmp/models/Stable-diffusion/v1-5-pruned-emaonly.safetensors",
+        default="/root/autodl-tmp/models/Stable-diffusion/hassanblend14.safetensors",
         help="",
     )
     parser.add_argument(
@@ -654,18 +651,18 @@ def setup_parser() -> argparse.ArgumentParser:
         default=None,
         help="",
     )
-    parser.add_argument("--instance_token", type=str, default="", help="")
-    parser.add_argument("--class_token", type=str, default="", help="")
+    parser.add_argument("--instance_token", type=str, default=False, help="")
+    parser.add_argument("--class_token", type=str, default=False, help="")
     parser.add_argument("--train_repeats", type=int, default=1, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--num_epochs", type=int, default=1, help="")
     parser.add_argument("--network_dim", type=int, default=128, help="")
     parser.add_argument("--network_alpha", type=int, default=64, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
-    parser.add_argument("--optimizer_type", type=str, default="Lion", help="")
-    parser.add_argument("--unet_lr", type=float, default=1e-5, help="")
-    parser.add_argument("--text_encoder_lr", type=float, default="0.5e-5", help="")
-    parser.add_argument("--lr_scheduler", type=str, default="polynomial", help="")
+    parser.add_argument("--optimizer_type", type=str, default="DAdaptation",choices=["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "DAdaptAdaGrad", "DAdaptAdan", "DAdaptSGD", "AdaFactor"], help="")
+    parser.add_argument("--unet_lr", type=float, default=1.0, help="")
+    parser.add_argument("--text_encoder_lr", type=float, default="1.0", help="")
+    parser.add_argument("--lr_scheduler", type=str, default="polynomial",choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"], help="")
     parser.add_argument("--prior_loss_weight", type=float, default="1.0", help="")
     parser.add_argument(
         "--prompts",
@@ -674,10 +671,10 @@ def setup_parser() -> argparse.ArgumentParser:
             "1 chenweiting man in white shirt",
             "1 chenweiting man in black jacket",
         ],
-        help="a list of prompts",
+        help="只训练Text Encoder部分",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
-    parser.add_argument("--save_n_epoch_ratio", type=float, default="1", help="")
+    parser.add_argument("--save_n_epochs_ratio", type=float, default="0.5", help="")
 
     return parser
 

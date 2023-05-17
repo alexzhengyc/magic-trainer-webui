@@ -15,6 +15,9 @@ outputs = []
 def alive():
     return proc is not None
 
+# def clean_all():
+    
+
 
 def initialize_runner(script_file, tmpls, opts):
     run_button = gr.Button(
@@ -41,8 +44,8 @@ def initialize_runner(script_file, tmpls, opts):
         while proc is not None and proc.poll() is None:
             try:
                 char = reader.read(1)
-                if shared.cmd_opts.enable_console_log:
-                    sys.stdout.write(char)
+                # if shared.cmd_opts.enable_console_log:
+                sys.stdout.write(char)
                 if char == "\n":
                     outputs.append(line)
                     line = ""

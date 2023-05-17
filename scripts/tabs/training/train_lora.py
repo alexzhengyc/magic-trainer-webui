@@ -11,7 +11,6 @@ from scripts.utilities import args_to_gradio, load_args_template, options_to_gra
 def title():
     return "magic trainer"
 
-
 def create_ui():
     network_options = {}
 
