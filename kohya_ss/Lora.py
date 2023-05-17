@@ -669,6 +669,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prior_loss_weight", type=float, default="1.0", help="")
     parser.add_argument(
         "--prompts",
+        type=str,
         default=[
             "1 chenweiting man in white shirt",
             "1 chenweiting man in black jacket",

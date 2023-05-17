@@ -137,6 +137,10 @@ def train(args):
     # accelerator prepare
     print("prepare accelerator")
     accelerator, unwrap_model = train_util.prepare_accelerator(args)
+    print("*****************************************")
+    print("accelerator device:", accelerator.device)
+    print("accelerator num_processes:", accelerator.num_processes)
+    print("*****************************************")
     is_main_process = accelerator.is_main_process
 
     # Prepare a type corresponding to mixed precision and cast it accordingly.

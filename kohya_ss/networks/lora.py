@@ -784,14 +784,13 @@ class LoRANetwork(torch.nn.Module):
         self.block_lr = False
 
         # assertion
-        names = []
+        names = set()
         for lora in self.text_encoder_loras + self.unet_loras:
         # assert lora.lora_name not in names, f"duplicated lora name: {lora.lora_name}"
-            names.append(lora.lora_name)
-        print()
-        print("*******************************")
-        print(f"lora names: {names}")
-        print("*******************************")
+            if lora.lora_name not in names:
+                names.add(lora.lora_name)
+            else:
+                continue
 
     def set_multiplier(self, multiplier):
         self.multiplier = multiplier
