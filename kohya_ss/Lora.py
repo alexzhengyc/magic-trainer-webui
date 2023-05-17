@@ -637,9 +637,9 @@ def setup_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--dir_name", type=str, default="x1", help="")
-    parser.add_argument("--train_data", type=str, default="test_train", help="")
+    parser.add_argument("--train_data", type=str, default="", help="")
 
-    parser.add_argument("--reg_data", type=str, default="test_reg", help="")
+    parser.add_argument("--reg_data", type=str, default="", help="")
     parser.add_argument("--resolution", type=int, default=512, help="")
     parser.add_argument("--v2", action="store_true", help="")
     parser.add_argument(

@@ -211,7 +211,7 @@ def get_unweighted_text_embeddings(
     pipe: StableDiffusionPipeline,
     text_input: torch.Tensor,
     chunk_length: int,
-    clip_skip: int,
+    # clip_skip: int,   # change ********************
     eos: int,
     pad: int,
     no_boseos_middle: Optional[bool] = True,
@@ -237,13 +237,15 @@ def get_unweighted_text_embeddings(
                         text_input_chunk[j, -1] = eos
                     if text_input_chunk[j, 1] == pad:  # BOSだけであとはPAD
                         text_input_chunk[j, 1] = eos
-
-            if clip_skip is None or clip_skip == 1:
-                text_embedding = pipe.text_encoder(text_input_chunk)[0]
-            else:
-                enc_out = pipe.text_encoder(text_input_chunk, output_hidden_states=True, return_dict=True)
-                text_embedding = enc_out["hidden_states"][-clip_skip]
-                text_embedding = pipe.text_encoder.text_model.final_layer_norm(text_embedding)
+            
+            # change ************************************************************************************
+            # if clip_skip is None or clip_skip == 1:
+            text_embedding = pipe.text_encoder(text_input_chunk)[0]
+            # else:
+            #     enc_out = pipe.text_encoder(text_input_chunk, output_hidden_states=True, return_dict=True)
+            #     text_embedding = enc_out["hidden_states"][-clip_skip]
+            #     text_embedding = pipe.text_encoder.text_model.final_layer_norm(text_embedding)
+            # change ************************************************************************************
 
             # cover the head and the tail by the starting and the ending tokens
             text_input_chunk[:, 0] = text_input[0, 0]
@@ -276,7 +278,7 @@ def get_weighted_text_embeddings(
     no_boseos_middle: Optional[bool] = False,
     skip_parsing: Optional[bool] = False,
     skip_weighting: Optional[bool] = False,
-    clip_skip=None,
+    # clip_skip=None,  # change ********* 
 ):
     r"""
     Prompts can be assigned with local weights using brackets. For example,
@@ -367,7 +369,7 @@ def get_weighted_text_embeddings(
         pipe,
         prompt_tokens,
         pipe.tokenizer.model_max_length,
-        clip_skip,
+        # clip_skip, # change **********
         eos,
         pad,
         no_boseos_middle=no_boseos_middle,
@@ -378,7 +380,7 @@ def get_weighted_text_embeddings(
             pipe,
             uncond_tokens,
             pipe.tokenizer.model_max_length,
-            clip_skip,
+            # clip_skip, # change **********
             eos,
             pad,
             no_boseos_middle=no_boseos_middle,
@@ -464,7 +466,7 @@ class StableDiffusionLongPromptWeightingPipeline(StableDiffusionPipeline):
         tokenizer: CLIPTokenizer,
         unet: UNet2DConditionModel,
         scheduler: SchedulerMixin,
-        clip_skip: int,
+        # clip_skip: int, # change **********
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPFeatureExtractor,
         requires_safety_checker: bool = True,
@@ -479,7 +481,7 @@ class StableDiffusionLongPromptWeightingPipeline(StableDiffusionPipeline):
             feature_extractor=feature_extractor,
             requires_safety_checker=requires_safety_checker,
         )
-        self.clip_skip = clip_skip
+        # self.clip_skip = clip_skip # change **********
         self.__init__additional__()
 
     # else:
@@ -571,7 +573,7 @@ class StableDiffusionLongPromptWeightingPipeline(StableDiffusionPipeline):
             prompt=prompt,
             uncond_prompt=negative_prompt if do_classifier_free_guidance else None,
             max_embeddings_multiples=max_embeddings_multiples,
-            clip_skip=self.clip_skip,
+            # clip_skip=self.clip_skip, # change **********
         )
         bs_embed, seq_len, _ = text_embeddings.shape
         text_embeddings = text_embeddings.repeat(1, num_images_per_prompt, 1)

@@ -2083,12 +2083,14 @@ def add_training_arguments(parser: argparse.ArgumentParser, support_dreambooth: 
         "--mixed_precision", type=str, default="no", choices=["no", "fp16", "bf16"], help="use mixed precision / 混合精度を使う場合、その精度"
     )
     parser.add_argument("--full_fp16", action="store_true", help="fp16 training including gradients / 勾配も含めてfp16で学習する")
-    parser.add_argument(
-        "--clip_skip",
-        type=int,
-        default=None,
-        help="use output of nth layer from back of text encoder (n>=1) / text encoderの後ろからn番目の層の出力を用いる（nは1以上）",
-    )
+    # change **********************************************************************************************************************
+    # parser.add_argument(
+    #     "--clip_skip",
+    #     type=int,
+    #     default=None,
+    #     help="use output of nth layer from back of text encoder (n>=1) / text encoderの後ろからn番目の層の出力を用いる（nは1以上）",
+    # )
+    # ***************************************************************************************************************************
     parser.add_argument(
         "--logging_dir",
         type=str,
@@ -2202,8 +2204,10 @@ def add_training_arguments(parser: argparse.ArgumentParser, support_dreambooth: 
 def verify_training_args(args: argparse.Namespace):
     if args.v_parameterization and not args.v2:
         print("v_parameterization should be with v2 / v1でv_parameterizationを使用することは想定されていません")
-    if args.v2 and args.clip_skip is not None:
-        print("v2 with clip_skip will be unexpected / v2でclip_skipを使用することは想定されていません")
+    # change ****************************************************************************************
+    # if args.v2 and args.clip_skip is not None:
+    #     print("v2 with clip_skip will be unexpected / v2でclip_skipを使用することは想定されていません")
+    # ***********************************************************************************************
 
     if args.cache_latents_to_disk and not args.cache_latents:
         args.cache_latents = True
@@ -2989,12 +2993,15 @@ def get_hidden_states(args: argparse.Namespace, input_ids, tokenizer, text_encod
     b_size = input_ids.size()[0]
     input_ids = input_ids.reshape((-1, tokenizer.model_max_length))  # batch_size*3, 77
 
-    if args.clip_skip is None:
-        encoder_hidden_states = text_encoder(input_ids)[0]
-    else:
-        enc_out = text_encoder(input_ids, output_hidden_states=True, return_dict=True)
-        encoder_hidden_states = enc_out["hidden_states"][-args.clip_skip]
-        encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states)
+    # change ******************************************************************
+    # if args.clip_skip is None:
+    #     encoder_hidden_states = text_encoder(input_ids)[0]
+    # else:
+    #     enc_out = text_encoder(input_ids, output_hidden_states=True, return_dict=True)
+    #     encoder_hidden_states = enc_out["hidden_states"][-args.clip_skip]
+    #     encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states)
+    encoder_hidden_states = text_encoder(input_ids)[0]
+    # *************************************************************************
 
     # bs*3, 77, 768 or 1024
     encoder_hidden_states = encoder_hidden_states.reshape((b_size, -1, encoder_hidden_states.shape[-1]))
@@ -3344,7 +3351,7 @@ def sample_images(
         unet=unet,
         tokenizer=tokenizer,
         scheduler=scheduler,
-        clip_skip=args.clip_skip,
+        # clip_skip=args.clip_skip, # change **********
         safety_checker=None,
         feature_extractor=None,
         requires_safety_checker=False,
