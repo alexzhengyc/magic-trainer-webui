@@ -166,6 +166,34 @@ def options_to_gradio(options, out, overrides={}):
         help = item["help"] if "help" in item else ""
         id = f"kohya_sd_webui__{shared.current_tab.replace('.', '_')}_{key}"
         type = override["type"] if "type" in override else get_arg_type(item)
+        if key=="sd_path":
+            choices=[]
+            datanames = os.listdir("/root/autodl-tmp/models/Stable-diffusion")
+            for dataname in datanames:
+                if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
+                    choices.append("/root/autodl-tmp/models/Stable-diffusion"+dataname)
+            component = gr.Dropdown(
+                choices=choices,
+                value=item["default"] if check_key(item, "default") else choices[0],
+                label=key,
+                elem_id=id,
+                interactive=True,
+            )
+            continue
+        if key=="vae_path":
+            choices=[]
+            datanames = os.listdir("/root/autodl-tmp/models/VAE")
+            for dataname in datanames:
+                if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
+                    choices.append("/root/autodl-tmp/models/VAE"+dataname)
+            component = gr.Dropdown(
+                choices=choices,
+                value=item["default"] if check_key(item, "default") else choices[0],
+                label=key,
+                elem_id=id,
+                interactive=True,
+            )
+            continue
         if type == list:
             choices = [
                 c if c is not None else "None"
