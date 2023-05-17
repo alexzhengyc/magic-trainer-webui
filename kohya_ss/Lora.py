@@ -670,10 +670,8 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompts",
         type=str,
-        default=[
-            "1 chenweiting man in white shirt",
-            "1 chenweiting man in black jacket",
-        ],
+        default=
+            "1 chenweiting man in white shirt, 1 chenweiting man in black jacket",
         help="a list of prompts",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
