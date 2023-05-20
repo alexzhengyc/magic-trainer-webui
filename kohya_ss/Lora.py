@@ -22,9 +22,11 @@ class Lora:
         self.dir_name = kwargs.get("dir_name", "default")
         self.train_data = kwargs.get("train_data", "")
         self.reg_data = kwargs.get("reg_data", "")
-        self.sd_path = kwargs.get("sd_path", "")
+        self.sd_path = kwargs.get(
+            "sd_path",
+            "/root/autodl-tmp/models/Stable-diffusion/v1-5-pruned-emaonly.safetensors",
+        )
         self.resume_path = kwargs.get("resume_path", "")
-        self.vae_path = kwargs.get("vae_path", "")
         self.v2 = kwargs.get("v2", False)
         self.instance_token = kwargs.get("instance_token", "")
         self.class_token = kwargs.get("class_token", "")
@@ -43,18 +45,19 @@ class Lora:
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
         self.resolution = kwargs.get("resolution", 512)
         self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
-        self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio")
-        self.train_batch_size = kwargs.get("train_batch_size", 2)
+        self.save_n_epochs_ratio = kwargs.get("save_n_epochs_ratio")
+        self.train_batch_size = kwargs.get("train_batch_size", 4)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
 
-
-        ## TODO: change to dir in stable-diffusion-webui
         self.project_name = self.dir_name
+        self.root_dir = "/root/alex-trainer"
         self.output_dir = "/root/autodl-tmp/training"
         self.dataset_dir = "/root/autodl-tmp/dataset"
         self.save_model_dir = "/root/autodl-tmp/models/Lora"
+        self.vae_path = (
+            "/root/autodl-tmp/models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"
+        )
         self.blip_path = "/root/autodl-tmp/models/BLIP/model_large_caption.pth"
-        #*************************************************
 
         self.add_token_to_caption = True
         self.flip_aug = True
@@ -67,7 +70,7 @@ class Lora:
         self.caption_dropout_rate = 0
         self.caption_dropout_every_n_epochs = 0
 
-        self.repo_dir = os.path.dirname(__file__)
+        self.repo_dir = os.path.join(self.root_dir, "kohya-trainer")
         self.training_dir = os.path.join(self.output_dir, self.dir_name)
         self.train_data_dir = os.path.join(self.training_dir, "train_data")
         self.reg_data_dir = os.path.join(self.training_dir, "reg_data")
@@ -93,8 +96,10 @@ class Lora:
             os.makedirs(dir, exist_ok=True)
 
         if self.train_data != "":
+            self.train_data = os.path.join(self.dataset_dir, self.train_data)
             shutil.copytree(self.train_data, self.train_data_dir, dirs_exist_ok=True)
         if self.reg_data != "":
+            self.reg_data = os.path.join(self.dataset_dir, self.reg_data)
             shutil.copytree(self.reg_data, self.reg_data_dir, dirs_exist_ok=True)
 
         if not os.path.exists(self.accelerate_config):
@@ -539,8 +544,8 @@ class Lora:
                 "save_every_n_epochs": self.save_every_n_epochs
                 if self.save_every_n_epochs
                 else None,
-                "save_n_epoch_ratio": self.save_n_epoch_ratio
-                if self.save_n_epoch_ratio
+                "save_n_epoch_ratio": self.save_n_epochs_ratio
+                if self.save_n_epochs_ratio
                 else None,
                 "save_last_n_epochs": None,
                 "save_state": None,
@@ -630,11 +635,11 @@ def setup_parser() -> argparse.ArgumentParser:
         choices=[None, "ckpt", "pt", "safetensors"],
         help="保存模型形式",
     )
-
+    parser.add_argument("--prepare", action="store_true", help="")
     parser.add_argument("--dir_name", type=str, default="x1", help="")
-    parser.add_argument("--train_data", type=str, default="", help="")
+    parser.add_argument("--train_data", type=str, default="test_train", help="")
 
-    parser.add_argument("--reg_data", type=str, default="", help="")
+    parser.add_argument("--reg_data", type=str, default="test_reg", help="")
     parser.add_argument("--resolution", type=int, default=512, help="")
     parser.add_argument("--v2", action="store_true", help="")
     parser.add_argument(
@@ -649,8 +654,8 @@ def setup_parser() -> argparse.ArgumentParser:
         default=None,
         help="",
     )
-    parser.add_argument("--instance_token", type=str, default=False, help="")
-    parser.add_argument("--class_token", type=str, default=False, help="")
+    parser.add_argument("--instance_token", type=str, default="", help="")
+    parser.add_argument("--class_token", type=str, default="", help="")
     parser.add_argument("--train_repeats", type=int, default=1, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--num_epochs", type=int, default=1, help="")
@@ -664,7 +669,6 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prior_loss_weight", type=float, default="1.0", help="")
     parser.add_argument(
         "--prompts",
-        type=str,
         default=[
             "1 chenweiting man in white shirt",
             "1 chenweiting man in black jacket",
@@ -682,5 +686,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = vars(args)
     model = Lora(**config)
-    # model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
+    print(config)
+    if config["prepare"]:
+        model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
     model.train()
