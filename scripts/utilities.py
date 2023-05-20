@@ -166,6 +166,7 @@ def options_to_gradio(options, out, overrides={}):
         help = item["help"] if "help" in item else ""
         id = f"kohya_sd_webui__{shared.current_tab.replace('.', '_')}_{key}"
         type = override["type"] if "type" in override else get_arg_type(item)
+        
         if key=="sd_path":
             choices=[]
             datanames = os.listdir("/root/autodl-tmp/models/Stable-diffusion")

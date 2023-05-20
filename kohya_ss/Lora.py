@@ -596,6 +596,15 @@ class Lora:
         write_file(config_path, config_str)
 
         final_prompts = []
+        self.prompts=self.prompts[1:]
+        self.prompts=self.prompts[:-1]
+        temp=self.prompts.split(",")
+        self.prompts=[]
+        for slice in temp:
+            self.prompts.append(slice.split("\'")[1])
+
+
+            
         for prompt in self.prompts:
             final_prompts.append(
                 # f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
@@ -664,11 +673,9 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prior_loss_weight", type=float, default="1.0", help="")
     parser.add_argument(
         "--prompts",
-        type=str,
         default=[
             "1 chenweiting man in white shirt",
-            "1 chenweiting man in black jacket",
-        ],
+            "1 chenweiting man in black jacket",],
         help="只训练Text Encoder部分",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
@@ -682,7 +689,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = vars(args)
     model = Lora(**config)
-    print(config)
     if config["prepare"]:
         model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
     model.train()
