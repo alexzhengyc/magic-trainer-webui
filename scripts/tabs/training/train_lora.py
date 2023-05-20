@@ -12,7 +12,7 @@ def dict_slice(adict,string):
     keys = adict.keys()
     dict_slice = {}
     if string=="1":
-        for k in list(keys)[0:len(list(keys))//2]:
+        for k in list(keys)[0:len(list(keys))//2+1]:
             dict_slice.update({k:adict.get(k)})
     else:
         for k in list(keys)[len(list(keys))//2+1:len(list(keys))]:
