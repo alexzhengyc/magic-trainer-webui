@@ -31,6 +31,12 @@ def create_ui(css):
                 sys.path.append(dir)
                 if len(tabs) < 1:
                     continue
+                with gr.TabItem("dataset preparation"):
+                    prepare_button = gr.Button(
+                        "prepare",
+                        variant="primary",
+                        elem_id=f"kohya_sd_webui__{shared.current_tab}_prepare_button",
+                    )
                 with gr.TabItem(category):
                     for lib in tabs:
                         try:
