@@ -21,13 +21,13 @@ class Lora:
     def __init__(self, **kwargs):
         self.dir_name = kwargs.get("dir_name", "default")
         self.train_data = kwargs.get("train_data", "")
-        self.reg_data = kwargs.get("reg_data", "")
+        self.reg_data = kwargs.get("reg_data(optional)", "")
         self.sd_path = kwargs.get("sd_path", "")
         self.resume_path = kwargs.get("resume_path", "")
         self.vae_path = kwargs.get("vae_path", "")
         self.v2 = kwargs.get("v2_model", False)
-        self.instance_token = kwargs.get("instance_token", "")
-        self.class_token = kwargs.get("class_token", "")
+        self.instance_token = kwargs.get("instance_token(optional)", "")
+        self.class_token = kwargs.get("class_token(optional)", "")
         self.train_repeats = kwargs.get("train_repeats", 10)
         self.reg_repeats = kwargs.get("reg_repeats", 1)
         self.num_epochs = kwargs.get("num_epochs", 1)
@@ -596,12 +596,7 @@ class Lora:
         write_file(config_path, config_str)
 
         final_prompts = []
-        temp=self.prompts.split(",")
-        self.prompts=[]
-        for slice in temp:
-            self.prompts.append(slice.split("\'")[1])
-
-
+        self.prompts = self.prompts.split(",")
             
         for prompt in self.prompts:
             final_prompts.append(
@@ -641,7 +636,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dir_name", type=str, default="x1", help="")
     parser.add_argument("--train_data", type=str, default="/path/to/your instance images and prompts", help="absolute path to your instance images and prompts")
 
-    parser.add_argument("--reg_data", type=str, default="(optional)/path/to/your class images and prompts", help="absolute path to your class images and prompts")
+    parser.add_argument("--reg_data(optional)", type=str, default="", help="absolute path to your class images and prompts")
     parser.add_argument("--resolution", type=int, default=512, help="image resolution", choices=[512, 768])
     parser.add_argument("--v2_model", action="store_true", help="if training a sd 2.0/2.1 model")
     parser.add_argument(
@@ -656,15 +651,15 @@ def setup_parser() -> argparse.ArgumentParser:
         default=None,
         help="",
     )
-    parser.add_argument("--instance_token", type=str, default="", help="")
-    parser.add_argument("--class_token", type=str, default="", help="")
+    parser.add_argument("--instance_token(optional)", type=str, default="no use if using instance prompt files", help="")
+    parser.add_argument("--class_token(optional)", type=str, default="no use if using class prompt files", help="")
     parser.add_argument("--train_repeats", type=int, default=10, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--num_epochs", type=int, default=1, help="")
     parser.add_argument("--network_dim", type=int, default=64, help="")
     parser.add_argument("--network_alpha", type=int, default=32, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
-    parser.add_argument("--optimizer_type", type=str, default="Lion",choices=["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "DAdaptAdaGrad", "DAdaptAdan", "DAdaptSGD", "AdaFactor"], help="")
+    parser.add_argument("--optimizer_type", type=str, default="Lion",choices=["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
     parser.add_argument("--unet_lr", type=float, default=1e-5, help="")
     parser.add_argument("--text_encoder_lr", type=float, default="0.5e-5", help="")
     parser.add_argument("--lr_scheduler", type=str, default="polynomial",choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"], help="")
@@ -672,8 +667,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompts",
         type=str,
-        default=
-            "1 xx man in white shirt, 1 xx man in black jacket",
+        default="1 xx man in white shirt, 1 xx man in black jacket",
         help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
