@@ -1,13 +1,13 @@
 *.pyc
 
 # build files
-kohya_ss/build
-kohya_ss/dist
-kohya_ss/library.egg-info
+kohya_ss_revised/build
+kohya_ss_revised/dist
+kohya_ss_revised/library.egg-info
 
-kohya_ss/logs
-kohya_ss/wd14_tagger_model
-kohya_ss/wandb
-kohya_ss/.git
+kohya_ss_revised/logs
+kohya_ss_revised/wd14_tagger_model
+kohya_ss_revised/wandb
+kohya_ss_revised/.git
 
 .vscode

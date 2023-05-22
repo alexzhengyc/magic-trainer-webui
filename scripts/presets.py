@@ -3,7 +3,7 @@ import inspect
 import os
 from pathlib import Path
 import toml
-from kohya_ss.library import train_util, config_util
+from kohya_ss_revised.library import train_util, config_util
 
 import gradio as gr
 

@@ -121,7 +121,7 @@ def compile_arg_parser(txt, module_path=None):
 
 
 def load_args_template(*filename):
-    repo_dir = os.path.join(ROOT_DIR, "kohya_ss")
+    repo_dir = os.path.join(ROOT_DIR, "kohya_ss_revised")
     filepath = os.path.join(repo_dir, *filename)
     with open(filepath, mode="r", encoding="utf-8_sig") as f:
         lines = f.readlines()
@@ -309,6 +309,6 @@ def run_python(script, templates, options, args):
         proc_args,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        cwd=os.path.join(ROOT_DIR, "kohya_ss"),
+        cwd=os.path.join(ROOT_DIR, "kohya_ss_revised"),
     )
     return ps

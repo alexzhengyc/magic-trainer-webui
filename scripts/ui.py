@@ -18,7 +18,7 @@ from scripts.utilities import path_to_module
 
 def create_ui(css):
     PATHS = [
-        os.path.join(ROOT_DIR, "kohya_ss", "library"),
+        os.path.join(ROOT_DIR, "kohya_ss_revised", "library"),
         ROOT_DIR,
     ]
     sys.path.extend(PATHS)

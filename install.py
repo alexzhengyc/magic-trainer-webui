@@ -41,7 +41,7 @@ WEBUI_DIR = os.path.dirname(webui_ext_dir)
 # def get_webui_path():
 #     return WEBUI_DIR
 
-if not os.path.exists(os.path.join(ext_dir, "kohya_ss", "build")) or not os.path.exists(os.path.join(ext_dir, "kohya_ss", "dist")):
-    os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "kohya_ss"))
+if not os.path.exists(os.path.join(ext_dir, "kohya_ss_revised", "build")) or not os.path.exists(os.path.join(ext_dir, "kohya_ss_revised", "dist")):
+    os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "kohya_ss_revised"))
     subprocess.run(["python", "setup.py", "install"])
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
