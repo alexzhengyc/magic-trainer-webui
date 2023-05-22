@@ -10,10 +10,10 @@ from scripts.shared import ROOT_DIR
 from scripts.utilities import path_to_module
 
 
-def title(txt):
-    gr.HTML(
-        f'<h1 style="margin: 0.5rem 0; font-weight: bold; font-size: 1.5rem;">{txt}</h1>',
-    )
+# def title(txt):
+#     gr.HTML(
+#         f'<h1 style="margin: 0.5rem 0; font-weight: bold; font-size: 1.5rem;">{txt}</h1>',
+#     )
 
 
 def create_ui(css):
@@ -31,6 +31,12 @@ def create_ui(css):
                 sys.path.append(dir)
                 if len(tabs) < 1:
                     continue
+                with gr.TabItem("dataset preparation"):
+                    prepare_button = gr.Button(
+                        "prepare",
+                        variant="primary",
+                        elem_id=f"kohya_sd_webui__{shared.current_tab}_prepare_button",
+                    )
                 with gr.TabItem(category):
                     for lib in tabs:
                         try:
@@ -41,13 +47,18 @@ def create_ui(css):
                             shared.current_tab = module_name
                             shared.loaded_tabs.append(module_name)
 
-                            with gr.TabItem(module.title()):
-                                module.create_ui()
+                            module.create_ui()
                         except Exception as e:
                             print(f"Failed to load {module_path}")
                             print(e)
                 sys.path.remove(dir)
-            with gr.TabItem("terminal"):
-                gr.HTML('<div id="kohya_sd_webui__terminal_outputs"></div>')
+                with gr.TabItem("terminal"):
+                    gr.HTML('<div id="kohya_sd_webui__terminal_outputs"></div>')
+                    # clear_button = gr.Button(
+                    #     "Clear all",
+                    #     variant="primary",
+                    #     elem_id=f"kohya_sd_webui__{shared.current_tab}_clear_button",
+                    #     )
+                    # clear_button.click(None,_js="document.getElementById('kohya_sd_webui__terminal_outputs').innerHTML=''")
     sys.path = [x for x in sys.path if x not in PATHS]
     return ui
