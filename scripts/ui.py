@@ -31,12 +31,6 @@ def create_ui(css):
                 sys.path.append(dir)
                 if len(tabs) < 1:
                     continue
-                with gr.TabItem("dataset preparation"):
-                    prepare_button = gr.Button(
-                        "prepare",
-                        variant="primary",
-                        elem_id=f"kohya_sd_webui__{shared.current_tab}_prepare_button",
-                    )
                 with gr.TabItem(category):
                     for lib in tabs:
                         try:
@@ -51,6 +45,13 @@ def create_ui(css):
                         except Exception as e:
                             print(f"Failed to load {module_path}")
                             print(e)
+                            
+                with gr.TabItem("data preparation"):
+                    prepare_button = gr.Button(
+                        "prepare",
+                        variant="primary",
+                        elem_id=f"kohya_sd_webui__{shared.current_tab}_prepare_button",
+                )
                 sys.path.remove(dir)
                 with gr.TabItem("terminal"):
                     gr.HTML('<div id="kohya_sd_webui__terminal_outputs"></div>')

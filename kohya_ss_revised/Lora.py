@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
 import os
 import argparse
 import sys
@@ -12,22 +10,20 @@ from tqdm import tqdm
 from PIL import Image
 import torch
 import subprocess
-from subprocess import getoutput
 from accelerate.utils import write_basic_config
 
 
-# define class Dreambooth
 class Lora:
     def __init__(self, **kwargs):
         self.dir_name = kwargs.get("dir_name", "default")
         self.train_data = kwargs.get("train_data", "")
-        self.reg_data = kwargs.get("reg_data(optional)", "")
+        self.reg_data = kwargs.get("reg_data", "")
         self.sd_path = kwargs.get("sd_path", "")
         self.resume_path = kwargs.get("resume_path", "")
         self.vae_path = kwargs.get("vae_path", "")
         self.v2 = kwargs.get("v2_model", False)
-        self.instance_token = kwargs.get("instance_token(optional)", "")
-        self.class_token = kwargs.get("class_token(optional)", "")
+        self.instance_token = kwargs.get("instance_token", "")
+        self.class_token = kwargs.get("class_token", "")
         self.train_repeats = kwargs.get("train_repeats", 10)
         self.reg_repeats = kwargs.get("reg_repeats", 1)
         self.num_epochs = kwargs.get("num_epochs", 1)
@@ -46,6 +42,7 @@ class Lora:
         self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 2)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
+        self.flip_aug = kwargs.get("flip_aug", False)
 
 
         ## TODO: change to dir in stable-diffusion-webui
@@ -57,7 +54,6 @@ class Lora:
         #*************************************************
 
         self.add_token_to_caption = True
-        self.flip_aug = True
         self.clip_skip = 1
         self.keep_tokens = 0
         self.caption_extension = ".txt"
@@ -630,13 +626,14 @@ def setup_parser() -> argparse.ArgumentParser:
         type=str,
         default="safetensors",
         choices=["ckpt", "safetensors"],
-        help="保存模型形式",
+        help="lora model save type",
     )
-    parser.add_argument("--prepare", action="store_true", help="")
+    # parser.add_argument("--prepare", action="store_true", help="")
     parser.add_argument("--dir_name", type=str, default="x1", help="")
     parser.add_argument("--train_data", type=str, default="/path/to/your instance images and prompts", help="absolute path to your instance images and prompts")
 
-    parser.add_argument("--reg_data(optional)", type=str, default="", help="absolute path to your class images and prompts")
+    parser.add_argument("--reg_data", type=str, default="", help="absolute path to your class images and prompts")
+    parser.add_argument("--flip_aug", type=bool, default=False, help="flip the images to augment the data")
     parser.add_argument("--resolution", type=int, default=512, help="image resolution", choices=[512, 768])
     parser.add_argument("--v2_model", action="store_true", help="if training a sd 2.0/2.1 model")
     parser.add_argument(
@@ -651,8 +648,8 @@ def setup_parser() -> argparse.ArgumentParser:
         default=None,
         help="",
     )
-    parser.add_argument("--instance_token(optional)", type=str, default="no use if using instance prompt files", help="")
-    parser.add_argument("--class_token(optional)", type=str, default="no use if using class prompt files", help="")
+    parser.add_argument("--instance_token", type=str, default="zwx", help="")
+    parser.add_argument("--class_token", type=str, default="person", help="")
     parser.add_argument("--train_repeats", type=int, default=10, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--num_epochs", type=int, default=1, help="")
@@ -667,7 +664,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompts",
         type=str,
-        default="1 xx man in white shirt, 1 xx man in black jacket",
+        default="1 zwx person in white shirt, 1 zwx person in black jacket",
         help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
@@ -681,6 +678,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = vars(args)
     model = Lora(**config)
-    if config["prepare"]:
-        model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
+    # if config["prepare"]:
+    #     model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
     model.train()

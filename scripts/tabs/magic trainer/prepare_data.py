@@ -1,7 +1,12 @@
+import argparse
+
 import gradio as gr
+
 from scripts import presets, ui
 from scripts.runner import initialize_runner
 from scripts.utilities import args_to_gradio, load_args_template, options_to_gradio
+
+
 
 def dict_slice(adict,string):
     keys = adict.keys()
@@ -17,7 +22,7 @@ def dict_slice(adict,string):
 def create_ui():
     network_options = {}
 
-    templates, script_file = load_args_template("Lora.py")
+    templates, script_file = load_args_template("Prepare.py")
 
     get_options = lambda: {
         **network_options,
