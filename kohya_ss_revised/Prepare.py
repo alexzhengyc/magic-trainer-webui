@@ -4,14 +4,16 @@ from PIL import Image
 import random
 import concurrent.futures
 import subprocess
-import tqdm
+from tqdm import tqdm
     
 class Prepare:
     def __init__(self, **kwargs):
+        self.anotation_method = kwargs.get("anotation_method", "blip") 
         self.train_data_dir = kwargs.get("train_data_dir", "")
+        self.recursive = kwargs.get("recursive", False)
         self.batch_size = kwargs.get("batch_size", 2)
-        self.num_batches = kwargs.get("num_batches", 1)
         self.top_p = kwargs.get("top_p", 0.9)
+        self.blip_path = kwargs.get("blip_path", "")
         self.max_length = kwargs.get("max_length", 75)
         self.min_length = kwargs.get("min_length", 5)
         self.threshold = kwargs.get("threshold", 0.5)
@@ -24,6 +26,10 @@ class Prepare:
 
     def run(self):
         kohya_dir = os.path.dirname(os.path.realpath(__file__))
+        magic_trainer_dir = os.path.dirname(kohya_dir)
+        extensions_dir = os.path.dirname(magic_trainer_dir)
+        stable_diffusion_dir = os.path.dirname(extensions_dir)
+        blip_dir = os.path.join(stable_diffusion_dir, "models/BLIP")
         finetune_dir = os.path.join(kohya_dir, "finetune")
 
         convert = True  # @param {type:"boolean"}
@@ -98,7 +104,7 @@ class Prepare:
         # You can choose to train a model using captions. We're using [BLIP](https://huggingface.co/spaces/Salesforce/BLIP) for image captioning and [Waifu Diffusion 1.4 Tagger](https://huggingface.co/spaces/SmilingWolf/wd-v1-4-tags) for image tagging similar to Danbooru.
         # - Use BLIP Captioning for: `General Images`
         # - Use Waifu Diffusion 1.4 Tagger V2 for: `Anime and Manga-style Images`
-        if self.anotation_method == "blip":
+        if self.anotation_method == "blip" or self.anotation_method == "both":
             max_data_loader_n_workers = 2  # @param {type:'number'}
             beam_search = True  # @param {type:'boolean'}
             command = f"""python make_captions.py "{self.train_data_dir}" --caption_weights {self.blip_path} --batch_size {self.batch_size} {"--beam_search" if beam_search else ""} --min_length {self.min_length} --max_length {self.max_length} --caption_extension .txt --max_data_loader_n_workers {max_data_loader_n_workers}"""
@@ -110,7 +116,6 @@ class Prepare:
             max_data_loader_n_workers = 2  # @param {type:'number'}
             model = "SmilingWolf/wd-v1-4-convnextv2-tagger-v2"  # @param ["SmilingWolf/wd-v1-4-convnextv2-tagger-v2", "SmilingWolf/wd-v1-4-swinv2-tagger-v2", "SmilingWolf/wd-v1-4-convnext-tagger-v2", "SmilingWolf/wd-v1-4-vit-tagger-v2"]
             # @markdown Use the `recursive` option to process subfolders as well, useful for multi-concept training.
-            recursive = False  # @param {type:"boolean"}
             # @markdown Debug while tagging, it will print your image file with general tags and character tags.
             verbose_logging = False  # @param {type:"boolean"}
             # @markdown Separate `undesired_tags` with comma `(,)` if you want to remove multiple tags, e.g. `1girl,solo,smile`.
@@ -147,11 +152,10 @@ class Prepare:
 
         ### Combine BLIP and Waifu
 
-        if self.anotation_method == "combined":
+        if self.anotation_method == "both":
             max_data_loader_n_workers = 2  # @param {type:'number'}
             model = "SmilingWolf/wd-v1-4-convnextv2-tagger-v2"  # @param ["SmilingWolf/wd-v1-4-convnextv2-tagger-v2", "SmilingWolf/wd-v1-4-swinv2-tagger-v2", "SmilingWolf/wd-v1-4-convnext-tagger-v2", "SmilingWolf/wd-v1-4-vit-tagger-v2"]
             # @markdown Use the `recursive` option to process subfolders as well, useful for multi-concept training.
-            recursive = False  # @param {type:"boolean"}
             # @markdown Debug while tagging, it will print your image file with general tags and character tags.
             verbose_logging = False  # @param {type:"boolean"}
             # @markdown Separate `undesired_tags` with comma `(,)` if you want to remove multiple tags, e.g. `1girl,solo,smile`.
@@ -258,28 +262,30 @@ class Prepare:
 
 def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--anotation_method", type=str, default="blip", choice=["blip", "wd14-tagger"], help="anotation method")
-    parser.add_argument("--train_data_dir", type=str, help="directory for train images")
-    parser.add_argument("--batch_size", type=int, default=16, help="batch size in inference")
+    parser.add_argument("--anotation_method", type=str, default="blip", choices=["blip", "wd14-tagger", "both"], help="anotation method")
+    
+    parser.add_argument("--train_data_dir", type=str, default="/root/dir/to/your image", help="directory for train images")
+    parser.add_argument("--batch_size", type=int, default=2, help="batch size in inference")
 
     # parser.add_argument("--num_beams", type=int, default=1, help="num of beams in beam search ")
     # parser.add_argument("--top_p", type=float, default=0.9, help="top_p in Nucleus sampling ")
+    parser.add_argument("--blip_path", type=str, help="path to blip")
     parser.add_argument("--max_length", type=int, default=75, help="max length of caption ")
     parser.add_argument("--min_length", type=int, default=5, help="min length of caption ")
-    parser.add_argument("--threshold", type=float, default=0.35, help="threshold of confidence to add a tag ")
+    # parser.add_argument("--threshold", type=float, default=0.35, help="threshold of confidence to add a tag ")
     parser.add_argument(
         "--general_threshold",
         type=float,
-        default=None,
+        default=0.3,
         help="threshold of confidence to add a tag for general category, same as --thresh if omitted ",
     )
     parser.add_argument(
         "--character_threshold",
         type=float,
-        default=None,
+        default=0.3,
         help="threshold of confidence to add a tag for character category, same as --thres if omitted ",
     )
-    parser.add_argument("--recursive", action="store_true", help="search for images in subfolders recursively")
+    # parser.add_argument("--recursive", action="store_true", help="search for images in subfolders recursively")
 
     parser.add_argument(
         "--undesired_tags",

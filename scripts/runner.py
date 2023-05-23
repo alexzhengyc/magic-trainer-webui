@@ -20,12 +20,12 @@ def initialize_runner(script_file, tmpls, opts):
     run_button = gr.Button(
         "Run",
         variant="primary",
-        elem_id=f"kohya_sd_webui__{shared.current_tab}_run_button",
+        elem_id=f"magic_trainer_webui__{shared.current_tab}_run_button",
     )
     stop_button = gr.Button(
         "Stop",
         variant="secondary",
-        elem_id=f"kohya_sd_webui__{shared.current_tab}_stop_button",
+        elem_id=f"magic_trainer_webui__{shared.current_tab}_stop_button",
     )
                     
     get_templates = lambda: tmpls() if callable(tmpls) else tmpls

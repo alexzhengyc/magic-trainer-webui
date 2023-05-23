@@ -155,6 +155,12 @@ def get_arg_type(d):
 
 
 def options_to_gradio(options, out, overrides={}):
+    scripts_dir = os.path.dirname(os.path.realpath(__file__))
+    magic_trainer_dir = os.path.dirname(scripts_dir)
+    extensions_dir = os.path.dirname(magic_trainer_dir)
+    stable_diffusion_dir = os.path.dirname(extensions_dir)
+    models_dir = os.path.join(stable_diffusion_dir, "models")
+
     for _, item in options.items():
         item = item.__dict__ if hasattr(item, "__dict__") else item
         key = item["dest"]
@@ -169,10 +175,10 @@ def options_to_gradio(options, out, overrides={}):
         
         if key=="sd_path":
             choices=[]
-            datanames = os.listdir("/root/autodl-tmp/models/Stable-diffusion")
+            datanames = os.listdir(os.path.join(models_dir, "Stable-diffusion"))
             for dataname in datanames:
                 if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
-                    choices.append("/root/autodl-tmp/models/Stable-diffusion"+dataname)
+                    choices.append(os.path.join(models_dir, "Stable-diffusion", dataname))
             component = gr.Dropdown(
                 choices=choices,
                 value=item["default"] if check_key(item, "default") else choices[0],
@@ -183,10 +189,11 @@ def options_to_gradio(options, out, overrides={}):
             continue
         if key=="vae_path":
             choices=[]
-            datanames = os.listdir("/root/autodl-tmp/models/VAE")
+            datanames = os.listdir(os.path.join(models_dir, "VAE"))
             for dataname in datanames:
                 if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
-                    choices.append("/root/autodl-tmp/models/VAE"+dataname)
+                    choices.append(os.path.join(models_dir, "VAE", dataname))
+            choices.append("")
             component = gr.Dropdown(
                 choices=choices,
                 value=item["default"] if check_key(item, "default") else choices[0],
@@ -195,6 +202,22 @@ def options_to_gradio(options, out, overrides={}):
                 interactive=True,
             )
             continue
+        if key=="blip_path":
+            choices=[]
+            datanames = os.listdir(os.path.join(models_dir, "BLIP"))
+            for dataname in datanames:
+                if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors' or os.path.splitext(dataname)[1] == '.pth':
+                    choices.append(os.path.join(models_dir, "BLIP", dataname))
+            choices.append("")
+            component = gr.Dropdown(
+                choices=choices,
+                value=item["default"] if check_key(item, "default") else choices[0],
+                label=key,
+                elem_id=id,
+                interactive=True,
+            )
+            continue
+
         if type == list:
             choices = [
                 c if c is not None else "None"
