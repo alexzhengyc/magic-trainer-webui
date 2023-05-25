@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
 import os
 import argparse
 import sys
@@ -12,20 +10,18 @@ from tqdm import tqdm
 from PIL import Image
 import torch
 import subprocess
-from subprocess import getoutput
 from accelerate.utils import write_basic_config
 
 
-# define class Dreambooth
 class Lora:
     def __init__(self, **kwargs):
-        self.dir_name = kwargs.get("dir_name", "default")
+        self.dir_name = kwargs.get("lora_name", "default")
         self.train_data = kwargs.get("train_data", "")
         self.reg_data = kwargs.get("reg_data", "")
         self.sd_path = kwargs.get("sd_path", "")
         self.resume_path = kwargs.get("resume_path", "")
         self.vae_path = kwargs.get("vae_path", "")
-        self.v2 = kwargs.get("v2", False)
+        self.v2 = kwargs.get("v2_model", False)
         self.instance_token = kwargs.get("instance_token", "")
         self.class_token = kwargs.get("class_token", "")
         self.train_repeats = kwargs.get("train_repeats", 10)
@@ -46,18 +42,26 @@ class Lora:
         self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 2)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
+        self.flip_aug = kwargs.get("flip_aug", False)
 
 
         ## TODO: change to dir in stable-diffusion-webui
-        self.project_name = self.dir_name
-        self.output_dir = "/root/autodl-tmp/training"
-        self.dataset_dir = "/root/autodl-tmp/dataset"
-        self.save_model_dir = "/root/autodl-tmp/models/Lora"
-        self.blip_path = "/root/autodl-tmp/models/BLIP/model_large_caption.pth"
+        self.project_name = self.lora_name
+        kohya_dir = os.path.dirname(os.path.realpath(__file__))
+        magic_trainer_dir = os.path.dirname(kohya_dir)
+        extensions_dir = os.path.dirname(magic_trainer_dir)
+        stable_diffusion_dir = os.path.dirname(extensions_dir)
+        self.output_dir = os.path.join(stable_diffusion_dir, "output")
+        self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Lora")
+        
+
+        # self.output_dir = "/root/autodl-tmp/training"
+        # self.dataset_dir = "/root/autodl-tmp/dataset"
+        # self.save_model_dir = "/root/autodl-tmp/models/Lora"
+        # self.blip_path = "/root/autodl-tmp/models/BLIP/model_large_caption.pth"
         #*************************************************
 
         self.add_token_to_caption = True
-        self.flip_aug = True
         self.clip_skip = 1
         self.keep_tokens = 0
         self.caption_extension = ".txt"
@@ -122,229 +126,6 @@ class Lora:
                 print(f"Deleting file {item} from {self.train_data_dir}")
                 os.remove(os.path.join(self.train_data_dir, item))
 
-    def prepare(
-        self,
-        data_anotation="combined",  # @param ["none", "waifu", "blip", "combined"]
-        # waifu
-        undesired_tags="",
-        general_threshold=0.3,  # @param {type:"slider", min:0, max:1, step:0.05}
-        character_threshold=0.5,  # @param {type:"slider", min:0, max:1, step:0.05}
-    ):
-        self.data_anotation = data_anotation
-        self.undesired_tags = undesired_tags
-        self.general_threshold = general_threshold
-        self.character_threshold = character_threshold
-
-        convert = True  # @param {type:"boolean"}
-        random_color = True  # @param {type:"boolean"}
-        batch_size = 32
-        images = [
-            image
-            for image in os.listdir(self.train_data_dir)
-            if image.endswith(".png") or image.endswith(".webp")
-        ]
-        background_colors = [
-            (255, 255, 255),
-            (0, 0, 0),
-            (255, 0, 0),
-            (0, 255, 0),
-            (0, 0, 255),
-            (255, 255, 0),
-            (255, 0, 255),
-            (0, 255, 255),
-        ]
-
-        def process_image(image_name):
-            img = Image.open(f"{self.train_data_dir}/{image_name}")
-
-            if img.mode in ("RGBA", "LA"):
-                if random_color:
-                    background_color = random.choice(background_colors)
-                else:
-                    background_color = (255, 255, 255)
-                bg = Image.new("RGB", img.size, background_color)
-                bg.paste(img, mask=img.split()[-1])
-
-                if image_name.endswith(".webp"):
-                    bg = bg.convert("RGB")
-                    bg.save(
-                        f'{self.train_data_dir}/{image_name.replace(".webp", ".jpg")}',
-                        "JPEG",
-                    )
-                    os.remove(f"{self.train_data_dir}/{image_name}")
-                    print(
-                        f" Converted image: {image_name} to {image_name.replace('.webp', '.jpg')}"
-                    )
-                else:
-                    bg.save(f"{self.train_data_dir}/{image_name}", "PNG")
-                    print(f" Converted image: {image_name}")
-            else:
-                if image_name.endswith(".webp"):
-                    img.save(
-                        f'{self.train_data_dir}/{image_name.replace(".webp", ".jpg")}',
-                        "JPEG",
-                    )
-                    os.remove(f"{self.train_data_dir}/{image_name}")
-                    print(
-                        f" Converted image: {image_name} to {image_name.replace('.webp', '.jpg')}"
-                    )
-                else:
-                    img.save(f"{self.train_data_dir}/{image_name}", "PNG")
-
-        num_batches = len(images) // batch_size + 1
-        if convert:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                for i in tqdm(range(num_batches)):
-                    start = i * batch_size
-                    end = start + batch_size
-                    batch = images[start:end]
-                    executor.map(process_image, batch)
-
-            print("All images have been converted")
-
-        # ## Data Annotation
-        # You can choose to train a model using captions. We're using [BLIP](https://huggingface.co/spaces/Salesforce/BLIP) for image captioning and [Waifu Diffusion 1.4 Tagger](https://huggingface.co/spaces/SmilingWolf/wd-v1-4-tags) for image tagging similar to Danbooru.
-        # - Use BLIP Captioning for: `General Images`
-        # - Use Waifu Diffusion 1.4 Tagger V2 for: `Anime and Manga-style Images`
-        os.chdir(self.repo_dir)
-        if data_anotation == "blip" or data_anotation == "combined":
-            batch_size = 2  # @param {type:'number'}
-            max_data_loader_n_workers = 2  # @param {type:'number'}
-            beam_search = True  # @param {type:'boolean'}
-            min_length = 5  # @param {type:"slider", min:0, max:100, step:5.0}
-            max_length = 75  # @param {type:"slider", min:0, max:100, step:5.0}
-
-            command = f"""python make_captions.py "{self.train_data_dir}" --caption_weights {self.blip_path} --batch_size {batch_size} {"--beam_search" if beam_search else ""} --min_length {min_length} --max_length {max_length} --caption_extension .txt --max_data_loader_n_workers {max_data_loader_n_workers}"""
-            subprocess.run(command, shell=True, check=True)
-
-        # 4.2.2. Waifu Diffusion 1.4 Tagger V2
-
-        if data_anotation == "waifu" or data_anotation == "combined":
-            batch_size = 2  # @param {type:'number'}
-            max_data_loader_n_workers = 2  # @param {type:'number'}
-            model = "SmilingWolf/wd-v1-4-convnextv2-tagger-v2"  # @param ["SmilingWolf/wd-v1-4-convnextv2-tagger-v2", "SmilingWolf/wd-v1-4-swinv2-tagger-v2", "SmilingWolf/wd-v1-4-convnext-tagger-v2", "SmilingWolf/wd-v1-4-vit-tagger-v2"]
-            # @markdown Use the `recursive` option to process subfolders as well, useful for multi-concept training.
-            recursive = False  # @param {type:"boolean"}
-            # @markdown Debug while tagging, it will print your image file with general tags and character tags.
-            verbose_logging = False  # @param {type:"boolean"}
-            # @markdown Separate `undesired_tags` with comma `(,)` if you want to remove multiple tags, e.g. `1girl,solo,smile`.
-
-            config = {
-                "_train_data_dir": self.train_data_dir,
-                "batch_size": batch_size,
-                "repo_id": model,
-                "recursive": recursive,
-                "remove_underscore": True,
-                "general_threshold": self.general_threshold,
-                "character_threshold": character_threshold,
-                "caption_extension": self.caption_extension,
-                "max_data_loader_n_workers": max_data_loader_n_workers,
-                "debug": verbose_logging,
-                "undesired_tags": self.undesired_tags,
-            }
-
-            args = ""
-            for k, v in config.items():
-                if k.startswith("_"):
-                    args += f'"{v}" '
-                elif isinstance(v, str):
-                    args += f'--{k}="{v}" '
-                elif isinstance(v, bool) and v:
-                    args += f"--{k} "
-                elif isinstance(v, float) and not isinstance(v, bool):
-                    args += f"--{k}={v} "
-                elif isinstance(v, int) and not isinstance(v, bool):
-                    args += f"--{k}={v} "
-
-            final_args = f"python tag_images_by_wd14_tagger.py {args}"
-            subprocess.run(final_args, shell=True, check=True)
-
-        # ### Combine BLIP and Waifu
-
-        # if data_anotation == "combined":
-        #     def read_file_content(file_path):
-        #         with open(file_path, "r") as file:
-        #             content = file.read()
-        #         return content
-
-        #     def remove_redundant_words(content1, content2):
-        #         return content1.rstrip('\n') + ', ' + content2
-
-        #     def write_file_content(file_path, content):
-        #         with open(file_path, "w") as file:
-        #             file.write(content)
-
-        #     def combine():
-        #         directory = self.train_data_dir
-        #         extension1 = ".caption"
-        #         extension2 = ".txt"
-        #         output_extension = ".combined"
-
-        #         for file in os.listdir(directory):
-        #             if file.endswith(extension1):
-        #                 filename = os.path.splitext(file)[0]
-        #                 file1 = os.path.join(directory, filename + extension1)
-        #                 file2 = os.path.join(directory, filename + extension2)
-        #                 output_file = os.path.join(directory, filename + output_extension)
-
-        #                 if os.path.exists(file2):
-        #                     content1 = read_file_content(file1)
-        #                     content2 = read_file_content(file2)
-
-        #                     combined_content = remove_redundant_words(content1, content2)
-
-        #                     write_file_content(output_file, combined_content)
-
-        #     combine()
-
-        def read_file(filename):
-            with open(filename, "r") as f:
-                contents = f.read()
-            return contents
-
-        def write_file(filename, contents):
-            with open(filename, "w") as f:
-                f.write(contents)
-
-        def add_tag(filename, tag):
-            contents = read_file(filename)
-            # move the "cat" or "dog" to the beginning of the contents
-            if "cat" in contents:
-                contents = contents.replace("cat, ", "")
-                contents = contents.replace(", cat", "")
-                contents = "cat, " + contents
-            if "dog" in contents:
-                contents = contents.replace("dog, ", "")
-                contents = contents.replace(", dog", "")
-                contents = "dog, " + contents
-
-            # add the tag
-            tag = ", ".join(tag.split())
-            tag = tag.replace("_", " ")
-            if tag in contents:
-                return
-            contents = tag + ", " + contents
-            write_file(filename, contents)
-
-        def delete_tag(filename, tag):
-            contents = read_file(filename)
-            tag = ", ".join(tag.split())
-            tag = tag.replace("_", " ")
-            if tag not in contents:
-                return
-            contents = "".join([s.strip(", ") for s in contents.split(tag)])
-            write_file(filename, contents)
-
-        if self.caption_extension != "none":
-            tag = f"{self.instance_token}"
-            for filename in os.listdir(self.train_data_dir):
-                if filename.endswith(self.caption_extension):
-                    file_path = os.path.join(self.train_data_dir, filename)
-
-                    if self.add_token_to_caption:
-                        add_tag(file_path, tag)
-                    else:
-                        delete_tag(file_path, tag)
 
     def train(self):
         lr_scheduler_num_cycles = 0  # @param {'type':'number'}
@@ -596,6 +377,8 @@ class Lora:
         write_file(config_path, config_str)
 
         final_prompts = []
+        self.prompts = self.prompts.split(",")
+            
         for prompt in self.prompts:
             final_prompts.append(
                 # f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
@@ -627,52 +410,50 @@ def setup_parser() -> argparse.ArgumentParser:
         "--save_model_as",
         type=str,
         default="safetensors",
-        choices=[None, "ckpt", "pt", "safetensors"],
-        help="保存模型形式",
+        choices=["ckpt", "safetensors"],
+        help="lora model save type",
     )
-
+    # parser.add_argument("--prepare", action="store_true", help="")
     parser.add_argument("--dir_name", type=str, default="x1", help="")
-    parser.add_argument("--train_data", type=str, default="", help="")
+    parser.add_argument("--train_data", type=str, default="/path/to/your instance images and prompts", help="absolute path to your instance images and prompts")
 
-    parser.add_argument("--reg_data", type=str, default="", help="")
-    parser.add_argument("--resolution", type=int, default=512, help="")
-    parser.add_argument("--v2", action="store_true", help="")
+    parser.add_argument("--reg_data", type=str, default="", help="absolute path to your class images and prompts")
+    parser.add_argument("--flip_aug", action="store_true", default=False, help="flip the images to augment the data")
+    parser.add_argument("--resolution", type=int, default=512, help="image resolution", choices=[512, 768])
+    parser.add_argument("--v2_model", action="store_true", help="if training a sd 2.0/2.1 model")
     parser.add_argument(
         "--sd_path",
         type=str,
-        default="/root/autodl-tmp/models/Stable-diffusion/hassanblend14.safetensors",
+        default="",
         help="",
     )
     parser.add_argument(
         "--vae_path",
         type=str,
-        default=None,
+        default="",
         help="",
     )
-    parser.add_argument("--instance_token", type=str, default=False, help="")
-    parser.add_argument("--class_token", type=str, default=False, help="")
-    parser.add_argument("--train_repeats", type=int, default=1, help="")
+    parser.add_argument("--instance_token", type=str, default="zwx", help="")
+    parser.add_argument("--class_token", type=str, default="person", help="")
+    parser.add_argument("--train_repeats", type=int, default=10, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--num_epochs", type=int, default=1, help="")
-    parser.add_argument("--network_dim", type=int, default=128, help="")
-    parser.add_argument("--network_alpha", type=int, default=64, help="")
+    parser.add_argument("--network_dim", type=int, default=64, help="")
+    parser.add_argument("--network_alpha", type=int, default=32, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
-    parser.add_argument("--optimizer_type", type=str, default="DAdaptation",choices=["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "DAdaptAdaGrad", "DAdaptAdan", "DAdaptSGD", "AdaFactor"], help="")
-    parser.add_argument("--unet_lr", type=float, default=1.0, help="")
-    parser.add_argument("--text_encoder_lr", type=float, default="1.0", help="")
+    parser.add_argument("--optimizer_type", type=str, default="Lion",choices=["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
+    parser.add_argument("--unet_lr", type=float, default=1e-5, help="")
+    parser.add_argument("--text_encoder_lr", type=float, default=0.5e-5, help="")
     parser.add_argument("--lr_scheduler", type=str, default="polynomial",choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"], help="")
-    parser.add_argument("--prior_loss_weight", type=float, default="1.0", help="")
+    parser.add_argument("--prior_loss_weight", type=float, default=1.0, help="")
     parser.add_argument(
         "--prompts",
         type=str,
-        default=[
-            "1 chenweiting man in white shirt",
-            "1 chenweiting man in black jacket",
-        ],
-        help="只训练Text Encoder部分",
+        default="1 zwx person in white shirt, 1 zwx person in black jacket",
+        help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
-    parser.add_argument("--save_n_epochs_ratio", type=float, default="0.5", help="")
+    parser.add_argument("--save_n_epoch_ratio", type=float, default=1, help="")
 
     return parser
 
@@ -682,5 +463,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = vars(args)
     model = Lora(**config)
-    # model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
+    # if config["prepare"]:
+    #     model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
     model.train()

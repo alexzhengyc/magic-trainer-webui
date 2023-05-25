@@ -15,21 +15,19 @@ outputs = []
 def alive():
     return proc is not None
 
-# def clean_all():
-    
-
 
 def initialize_runner(script_file, tmpls, opts):
     run_button = gr.Button(
         "Run",
         variant="primary",
-        elem_id=f"kohya_sd_webui__{shared.current_tab}_run_button",
+        elem_id=f"magic_trainer_webui__{shared.current_tab}_run_button",
     )
     stop_button = gr.Button(
         "Stop",
         variant="secondary",
-        elem_id=f"kohya_sd_webui__{shared.current_tab}_stop_button",
+        elem_id=f"magic_trainer_webui__{shared.current_tab}_stop_button",
     )
+                    
     get_templates = lambda: tmpls() if callable(tmpls) else tmpls
     get_options = lambda: opts() if callable(opts) else opts
 
@@ -60,13 +58,17 @@ def initialize_runner(script_file, tmpls, opts):
         print("killed the running process")
         proc.kill()
         proc = None
-
+        
+    def clean_all():
+        outputs=[]
+        
     def init():
         run_button.click(
             run,
             set(get_options().values()),
         )
         stop_button.click(stop)
+        
 
     return init
 

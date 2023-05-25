@@ -15,9 +15,9 @@ def create_js():
     with open(jsfile, mode="r") as f:
         js = f.read()
 
-    js = js.replace("kohya_sd_webui__help_map", json.dumps(shared.help_title_map))
+    js = js.replace("magic_trainer_webui__help_map", json.dumps(shared.help_title_map))
     js = js.replace(
-        "kohya_sd_webui__all_tabs",
+        "magic_trainer_webui__all_tabs",
         json.dumps(shared.loaded_tabs),
     )
     return js
@@ -55,7 +55,7 @@ def on_ui_tabs():
         css = f.read()
     sd_scripts = create_ui(css)
     create_head()
-    return [(sd_scripts, "Kohya sd-scripts", "kohya_sd_scripts")]
+    return [(sd_scripts, "Magic Trainer", "magic_trainer_scripts")]
 
 
 def launch():
