@@ -180,6 +180,8 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
+            shared.help_title_map[id] = help
+            out[key] = component
             continue
         if key=="vae_path":
             choices=[]
@@ -194,6 +196,8 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
+            shared.help_title_map[id] = help
+            out[key] = component
             continue
         if type == list:
             choices = [
