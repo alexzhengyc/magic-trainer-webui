@@ -13,7 +13,7 @@ class Prepare:
         self.recursive = kwargs.get("recursive", False)
         self.batch_size = kwargs.get("batch_size", 2)
         self.top_p = kwargs.get("top_p", 0.9)
-        self.blip_path = kwargs.get("blip_path", "")
+        self.blip = kwargs.get("blip", "")
         self.max_length = kwargs.get("max_length", 75)
         self.min_length = kwargs.get("min_length", 5)
         self.threshold = kwargs.get("threshold", 0.5)
@@ -269,7 +269,7 @@ def setup_parser() -> argparse.ArgumentParser:
 
     # parser.add_argument("--num_beams", type=int, default=1, help="num of beams in beam search ")
     # parser.add_argument("--top_p", type=float, default=0.9, help="top_p in Nucleus sampling ")
-    parser.add_argument("--blip_path", type=str, help="path to blip")
+    parser.add_argument("--blip", type=str, help="path to blip")
     parser.add_argument("--max_length", type=int, default=75, help="max length of caption ")
     parser.add_argument("--min_length", type=int, default=5, help="min length of caption ")
     # parser.add_argument("--threshold", type=float, default=0.35, help="threshold of confidence to add a tag ")
@@ -295,13 +295,13 @@ def setup_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--tags_to_add_to_front",
+        "--tags_to_replace",
         type=str,
         default="",
         help="comma-separated list of tags to delete from the output",
     )
     parser.add_argument(
-        "--tags_to_delete",
+        "--tags_to_add_to_front",
         type=str,
         default="",
         help="comma-separated list of tags to delete from the output",

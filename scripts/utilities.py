@@ -170,53 +170,193 @@ def options_to_gradio(options, out, overrides={}):
         component = None
 
         help = item["help"] if "help" in item else ""
-        id = f"kohya_sd_webui__{shared.current_tab.replace('.', '_')}_{key}"
+        id = f"magic_trainer_webui__{shared.current_tab.replace('.', '_')}_{key}"
         type = override["type"] if "type" in override else get_arg_type(item)
         
-        if key=="sd_path":
+        if key=="sd_model":
             choices=[]
-            datanames = os.listdir(os.path.join(models_dir, "Stable-diffusion"))
+            # datanames = os.listdir(os.path.join(models_dir, "Stable-diffusion"))
+            datanames = os.listdir("/root/stable-diffusion-webui/models/Stable-diffusion")
             for dataname in datanames:
-                if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
-                    choices.append(os.path.join(models_dir, "Stable-diffusion", dataname))
+                # if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
+                choices.append(os.path.join(models_dir, "Stable-diffusion", dataname))
+            if len(choices)==0:
+                choices.append("")
             component = gr.Dropdown(
                 choices=choices,
                 value=item["default"] if check_key(item, "default") else choices[0],
-                label=key,
+                label="sd_model (read from stable-diffusion/models/Stable-diffusion)",
                 elem_id=id,
                 interactive=True,
             )
+            shared.help_title_map[id] = help
+            out[key] = component
             continue
-        if key=="vae_path":
+
+        if key=="vae":
             choices=[]
             datanames = os.listdir(os.path.join(models_dir, "VAE"))
             for dataname in datanames:
                 if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
                     choices.append(os.path.join(models_dir, "VAE", dataname))
-            choices.append("")
+            choices.append("None")
             component = gr.Dropdown(
                 choices=choices,
-                value=item["default"] if check_key(item, "default") else choices[0],
-                label=key,
+                value=item["default"] if check_key(item, "default") else "None",
+                label="vae (read from stable-diffusion/models/VAE)",
                 elem_id=id,
                 interactive=True,
             )
+            shared.help_title_map[id] = help
+            out[key] = component
             continue
-        if key=="blip_path":
+
+        if key=="blip":
             choices=[]
             datanames = os.listdir(os.path.join(models_dir, "BLIP"))
             for dataname in datanames:
                 if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors' or os.path.splitext(dataname)[1] == '.pth':
                     choices.append(os.path.join(models_dir, "BLIP", dataname))
-            choices.append("")
+            if len(choices)==0:
+                choices.append("No blip model !!!")
+
+            # choices.append("")
             component = gr.Dropdown(
                 choices=choices,
                 value=item["default"] if check_key(item, "default") else choices[0],
-                label=key,
+                label="blip: blip model (read from stable-diffusion/models/BLIP)",
                 elem_id=id,
                 interactive=True,
             )
+            shared.help_title_map[id] = help
+            out[key] = component
             continue
+
+        if key== "train_data":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="train/instance dataset (/root/dir/to/folder)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key== "reg_data":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="reg/class dataset (/root/dir/to/folder)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key == "train_data_dir":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="image folder (/root/dir/to/folder)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key== "extra_sd_path":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="extra sd path (use this if not empty)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key== "instance_token":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="instance token (use if no text prompts in train dataset)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue    
+        
+        if key == "class_token":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="class token (use if no text prompts in reg dataset)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+        if key == "sample_prompts":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="sample prompts (seperate by ',')",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key == "max_length":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="blip: max length",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+            
+        if key == "num_samples":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="blip: min length",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+        
+        if key == "general_threshold":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="blip: general threshold (0-1)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+            
+        if key == "character_threshold":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="blip: character threshold (0-1)",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+        
+        if key == "undesired_tags":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="tagger: undesired tags (seperate by ',')",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key == "tags_to_replace":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="tags to replace (old:new, seperate by ',')",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
+        if key == "tags_to_add_to_front":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="tags to add to front (seperate by ',')",
+                elem_id=id,
+                interactive=True,
+            ).style()
+            continue
+
 
         if type == list:
             choices = [

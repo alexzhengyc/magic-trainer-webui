@@ -15,12 +15,12 @@ from accelerate.utils import write_basic_config
 
 class Lora:
     def __init__(self, **kwargs):
-        self.dir_name = kwargs.get("lora_name", "default")
+        self.lora_name = kwargs.get("lora_name", "default")
         self.train_data = kwargs.get("train_data", "")
         self.reg_data = kwargs.get("reg_data", "")
-        self.sd_path = kwargs.get("sd_path", "")
-        self.resume_path = kwargs.get("resume_path", "")
-        self.vae_path = kwargs.get("vae_path", "")
+        self.sd_model = kwargs.get("sd_model", "")
+        self.extra_sd_path = kwargs.get("extra_sd_path", None)
+        self.vae = kwargs.get("vae", "")
         self.v2 = kwargs.get("v2_model", False)
         self.instance_token = kwargs.get("instance_token", "")
         self.class_token = kwargs.get("class_token", "")
@@ -33,7 +33,7 @@ class Lora:
         self.train_text_encoder = kwargs.get("train_text_encoder", True)
         self.unet_lr = kwargs.get("unet_lr", 1.0)
         self.text_encoder_lr = kwargs.get("text_encoder_lr", self.unet_lr / 2)
-        self.prompts = kwargs.get("prompts", None)
+        self.prompts = kwargs.get("sample_prompts", None)
         self.images_per_prompt = kwargs.get("images_per_prompt", 1)
         self.optimizer_type = kwargs.get("optimizer_type", "DAdaptation")
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
@@ -41,6 +41,7 @@ class Lora:
         self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
         self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 2)
+        self.lowram = kwargs.get("lowram", False)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
         self.flip_aug = kwargs.get("flip_aug", False)
 
@@ -61,18 +62,23 @@ class Lora:
         # self.blip_path = "/root/autodl-tmp/models/BLIP/model_large_caption.pth"
         #*************************************************
 
+        if self.extra_sd_path is None or self.extra_sd_path == "":
+            self.sd_path = self.sd_model
+        else:
+            self.sd_path = self.extra_sd_path
+        if self.vae == "" or self.vae=="None":
+            self.vae = None
+
         self.add_token_to_caption = True
-        self.clip_skip = 1
         self.keep_tokens = 0
         self.caption_extension = ".txt"
-        self.lowram = False
         self.v_parameterization = False
 
         self.caption_dropout_rate = 0
         self.caption_dropout_every_n_epochs = 0
 
         self.repo_dir = os.path.dirname(__file__)
-        self.training_dir = os.path.join(self.output_dir, self.dir_name)
+        self.training_dir = os.path.join(self.output_dir, self.lora_name)
         self.train_data_dir = os.path.join(self.training_dir, "train_data")
         self.reg_data_dir = os.path.join(self.training_dir, "reg_data")
         self.config_dir = os.path.join(self.training_dir, "config")
@@ -141,7 +147,7 @@ class Lora:
         # precision = "fp16"  # @param ["fp16", "bf16"] {allow-input: false}
         width = 512  # @param {type: "integer"}
         height = 512  # @param {type: "integer"}
-        pre = "masterpiece, best quality"
+        pre = ""
         negative = "lowres, blurry"
 
         #
@@ -274,7 +280,7 @@ class Lora:
                 if self.v2 and self.v_parameterization
                 else False,
                 "pretrained_model_name_or_path": self.sd_path,
-                "vae": self.vae_path,
+                "vae": self.vae,
             },
             "additional_network_arguments": {
                 "no_metadata": False,
@@ -342,7 +348,6 @@ class Lora:
                 "log_prefix": self.project_name,
                 "noise_offset": noise_offset if noise_offset > 0 else None,
                 "lowram": self.lowram,
-                "clip_skip": self.clip_skip,
             },
             "sample_prompt_arguments": {
                 "sample_dir": self.sample_dir,
@@ -383,7 +388,8 @@ class Lora:
             final_prompts.append(
                 # f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
                 # if self.add_token_to_caption
-                f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
+                # f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
+                prompt
             )
         with open(prompt_path, "w") as file:
             # Write each string to the file on a new line
@@ -414,21 +420,28 @@ def setup_parser() -> argparse.ArgumentParser:
         help="lora model save type",
     )
     # parser.add_argument("--prepare", action="store_true", help="")
-    parser.add_argument("--dir_name", type=str, default="x1", help="")
-    parser.add_argument("--train_data", type=str, default="/path/to/your instance images and prompts", help="absolute path to your instance images and prompts")
+    parser.add_argument("--lora_name", type=str, default="x1", help="")
+    parser.add_argument("--train_data", type=str, default="", help="absolute path to your instance images and prompts")
 
     parser.add_argument("--reg_data", type=str, default="", help="absolute path to your class images and prompts")
     parser.add_argument("--flip_aug", action="store_true", default=False, help="flip the images to augment the data")
     parser.add_argument("--resolution", type=int, default=512, help="image resolution", choices=[512, 768])
     parser.add_argument("--v2_model", action="store_true", help="if training a sd 2.0/2.1 model")
     parser.add_argument(
-        "--sd_path",
+        "--sd_model",
         type=str,
         default="",
         help="",
     )
     parser.add_argument(
-        "--vae_path",
+        "--extra_sd_path",
+        type=str,
+        default="",
+        help="",
+    )
+
+    parser.add_argument(
+        "--vae",
         type=str,
         default="",
         help="",
@@ -441,13 +454,14 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--network_dim", type=int, default=64, help="")
     parser.add_argument("--network_alpha", type=int, default=32, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
+    parser.add_argument("--lowram", action="store_true", default=False, help="")
     parser.add_argument("--optimizer_type", type=str, default="Lion",choices=["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
     parser.add_argument("--unet_lr", type=float, default=1e-5, help="")
     parser.add_argument("--text_encoder_lr", type=float, default=0.5e-5, help="")
     parser.add_argument("--lr_scheduler", type=str, default="polynomial",choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"], help="")
     parser.add_argument("--prior_loss_weight", type=float, default=1.0, help="")
     parser.add_argument(
-        "--prompts",
+        "--sample_prompts",
         type=str,
         default="1 zwx person in white shirt, 1 zwx person in black jacket",
         help="input all your prompts here, separated by ','",
@@ -462,6 +476,7 @@ if __name__ == "__main__":
     parser = setup_parser()
     args = parser.parse_args()
     config = vars(args)
+    print(config)
     model = Lora(**config)
     # if config["prepare"]:
     #     model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]

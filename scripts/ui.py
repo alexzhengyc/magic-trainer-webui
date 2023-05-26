@@ -46,9 +46,12 @@ def create_ui(css):
                         #     print(f"Failed to load {module_path}")
                         #     print(e)
 
-            # sys.path.remove(dir)
-            # with gr.TabItem("terminal"):
-            #     gr.HTML('<div id="magic_trainer_webui__terminal_outputs"></div>')
+            sys.path.remove(dir)
+            with gr.TabItem("terminal"):
+                gr.HTML('<div id="magic_trainer_webui__terminal_outputs"></div>')
+
+            with gr.TabItem("tutorial"):
+                gr.HTML('<div id="magic_trainer_webui___tutorial"></div>')
                 # clear_button = gr.Button(
                 #     "Clear all",
                 #     variant="primary",

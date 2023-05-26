@@ -12,23 +12,23 @@ let executed = false
  * @param {string} tab
  * @param {boolean} show
  */
-function kohya_sd_webui__toggle_runner_button(tab, show) {
-    gradioApp().getElementById(`kohya_sd_webui__${tab}_run_button`).style.display = show ? 'block' : 'none'
-    gradioApp().getElementById(`kohya_sd_webui__${tab}_stop_button`).style.display = show ? 'none' : 'block'
+function magic_trainer_webui__toggle_runner_button(tab, show) {
+    gradioApp().getElementById(`magic_trainer_webui__${tab}_run_button`).style.display = show ? 'block' : 'none'
+    gradioApp().getElementById(`magic_trainer_webui__${tab}_stop_button`).style.display = show ? 'none' : 'block'
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     const observer = new MutationObserver((m) => {
-        if (!executed && gradioApp().querySelector('#kohya_sd_webui__root')) {
+        if (!executed && gradioApp().querySelector('#magic_trainer_webui__root')) {
             executed = true;
 
             /** @type {Record<string, string>} */
-            const helps = kohya_sd_webui__help_map
+            const helps = magic_trainer_webui__help_map
             /** @type {string[]} */
-            const all_tabs = kohya_sd_webui__all_tabs
+            const all_tabs = magic_trainer_webui__all_tabs
 
             const initializeTerminalObserver = () => {
-                const container = gradioApp().querySelector("#kohya_sd_webui__terminal_outputs")
+                const container = gradioApp().querySelector("#magic_trainer_webui__terminal_outputs")
                 setInterval(async () => {
                     const res = await fetch('./internal/extensions/kohya-sd-scripts-webui/terminal/outputs', {
                         method: "POST",
@@ -53,7 +53,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     const res = await fetch('./internal/extensions/kohya-sd-scripts-webui/process/alive')
                     const obj = await res.json()
                     for (const tab of all_tabs)
-                        kohya_sd_webui__toggle_runner_button(tab, !obj.alive)
+                        magic_trainer_webui__toggle_runner_button(tab, !obj.alive)
 
                 }, 1000)
             }
@@ -62,7 +62,7 @@ window.addEventListener('DOMContentLoaded', () => {
             checkProcessIsAlive()
 
             for (const tab of all_tabs)
-                gradioApp().querySelector(`#kohya_sd_webui__${tab}_run_button`).addEventListener('click', () => kohya_sd_webui__toggle_runner_button(tab, false))
+                gradioApp().querySelector(`#magic_trainer_webui__${tab}_run_button`).addEventListener('click', () => magic_trainer_webui__toggle_runner_button(tab, false))
 
             for (const [k, v] of Object.entries(helps)) {
                 el = gradioApp().getElementById(k)
