@@ -1,8 +1,8 @@
 # Magic Trainer Webui
 
 This extension aim for training **Lora** and **Dreambooth**(upcoming) inside **stable-diffusion-webui**. "Magic" Recipes are embedded in the training code so that even newbies can train a good model easily.
-![](/screenshots/lora trainer.png)
-![](/screenshots/data preparation.png)
+![](/screenshots/lora_trainer.png)
+![](/screenshots/data_preparation.png)
 ## Features 
 
 - Solve the original environment conflict with stable-diffusion-webui. 
