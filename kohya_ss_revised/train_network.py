@@ -85,7 +85,7 @@ def train(args):
         ignored = ["train_data_dir", "reg_data_dir", "in_json"]
         if any(getattr(args, attr) is not None for attr in ignored):
             print(
-                "ignore following options because config file is found: {0} / 設定ファイルが利用されるため以下のオプションは無視されます: {0}".format(
+                "ignore following options because config file is found: {0} ".format(
                     ", ".join(ignored)
                 )
             )
@@ -125,14 +125,14 @@ def train(args):
         return
     if len(train_dataset_group) == 0:
         print(
-            "No data found. Please verify arguments (train_data_dir must be the parent of folders with images) / 画像がありません。引数指定を確認してください（train_data_dirには画像があるフォルダではなく、画像があるフォルダの親フォルダを指定する必要があります）"
+            "No data found. Please verify arguments (train_data_dir must be the parent of folders with images)"
         )
         return
 
     if cache_latents:
         assert (
             train_dataset_group.is_latent_cacheable()
-        ), "when caching latents, either color_aug or random_crop cannot be used / latentをキャッシュするときはcolor_augとrandom_cropは使えません"
+        ), "when caching latents, either color_aug or random_crop cannot be used "
 
     # accelerator prepare
     print("prepare accelerator")
@@ -248,7 +248,7 @@ def train(args):
     if args.full_fp16:
         assert (
             args.mixed_precision == "fp16"
-        ), "full_fp16 requires mixed precision='fp16' / full_fp16を使う場合はmixed_precision='fp16'を指定してください。"
+        ), "full_fp16 requires mixed precision='fp16'"
         print("enable full fp16 training.")
         network.to(weight_dtype)
 
@@ -343,7 +343,6 @@ def train(args):
         "ss_mixed_precision": args.mixed_precision,
         "ss_full_fp16": bool(args.full_fp16),
         "ss_v2": bool(args.v2),
-        "ss_clip_skip": args.clip_skip,
         "ss_max_token_length": args.max_token_length,
         "ss_cache_latents": bool(args.cache_latents),
         "ss_seed": args.seed,
@@ -448,7 +447,7 @@ def train(args):
         # conserving backward compatibility when using train_dataset_dir and reg_dataset_dir
         assert (
             len(train_dataset_group.datasets) == 1
-        ), f"There should be a single dataset but {len(train_dataset_group.datasets)} found. This seems to be a bug. / データセットは1個だけ存在するはずですが、実際には{len(train_dataset_group.datasets)}個でした。プログラムのバグかもしれません。"
+        ), f"There should be a single dataset but {len(train_dataset_group.datasets)} found. This seems to be a bug. "
 
         dataset = train_dataset_group.datasets[0]
 
@@ -735,7 +734,7 @@ def setup_parser() -> argparse.ArgumentParser:
     config_util.add_config_arguments(parser)
     custom_train_functions.add_custom_train_arguments(parser)
 
-    parser.add_argument("--no_metadata", action="store_true", help="do not save metadata in output model / メタデータを出力先モデルに保存しない")
+    parser.add_argument("--no_metadata", action="store_true", help="do not save metadata in output model")
     parser.add_argument(
         "--save_model_as",
         type=str,
@@ -750,7 +749,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--network_weights", type=str, default=None, help="pretrained weights for network ")
     parser.add_argument("--network_module", type=str, default=None, help="network module to train ")
     parser.add_argument(
-        "--network_dim", type=int, default=None, help="network dimensions (depends on each network) / モジュールの次元数（ネットワークにより定義は異なります）"
+        "--network_dim", type=int, default=None, help="network dimensions (depends on each network)"
     )
     parser.add_argument(
         "--network_alpha",

@@ -39,7 +39,7 @@ class Lora:
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
         self.resolution = kwargs.get("resolution", 512)
         self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
-        self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio")
+        self.sample_n_epoch_ratio = kwargs.get("sample_n_epoch_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 2)
         self.lowram = kwargs.get("lowram", False)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
@@ -83,7 +83,6 @@ class Lora:
         self.tools_dir = os.path.join(self.repo_dir, "tools")
         self.finetune_dir = os.path.join(self.repo_dir, "finetune")
         self.sample_dir = os.path.join(self.training_dir, "sample")
-        self.inference_dir = os.path.join(self.training_dir, "inference")
         self.logging_dir = os.path.join(self.training_dir, "log")
 
         for dir in [
@@ -93,7 +92,6 @@ class Lora:
             self.config_dir,
             self.output_dir,
             self.sample_dir,
-            self.inference_dir,
         ]:
             os.makedirs(dir, exist_ok=True)
 
@@ -218,8 +216,6 @@ class Lora:
         with open(dataset_config, "w") as f:
             f.write(config_str)
 
-        print(config_str)
-
         # 5.3. Optimizer Config
 
         optimizer_args = ""  # @param {'type':'string'}
@@ -321,8 +317,8 @@ class Lora:
                 "save_every_n_epochs": self.save_every_n_epochs
                 if self.save_every_n_epochs
                 else None,
-                "save_n_epoch_ratio": self.save_n_epoch_ratio
-                if self.save_n_epoch_ratio
+                "save_n_epoch_ratio": self.sample_n_epoch_ratio
+                if self.sample_n_epoch_ratio
                 else None,
                 "save_last_n_epochs": None,
                 "save_state": None,
@@ -392,8 +388,6 @@ class Lora:
                 for i in range(self.images_per_prompt):
                     file.write(string + "\n")
 
-        print(config_str)
-
         sample_prompt = os.path.join(self.config_dir, "sample_prompt.txt")
         config_file = os.path.join(self.config_dir, "config_file.toml")
         dataset_config = os.path.join(self.config_dir, "dataset_config.toml")
@@ -461,7 +455,7 @@ def setup_parser() -> argparse.ArgumentParser:
         help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
-    parser.add_argument("--save_n_epoch_ratio", type=float, default=1, help="")
+    parser.add_argument("--sample_n_epoch_ratio", type=float, default=1, help="")
 
     return parser
 
@@ -470,8 +464,5 @@ if __name__ == "__main__":
     parser = setup_parser()
     args = parser.parse_args()
     config = vars(args)
-    print(config)
     model = Lora(**config)
-    # if config["prepare"]:
-    #     model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
     model.train()

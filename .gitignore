@@ -6,7 +6,10 @@ kohya_ss_revised/dist
 kohya_ss_revised/library.egg-info
 
 kohya_ss_revised/logs
-kohya_ss_revised/wd14_tagger_model
+kohya_ss_revised/finetune/blip
+kohya_ss_revised/finetune/wd14_tagger_model
+
+wd14_tagger_model
 kohya_ss_revised/wandb
 kohya_ss_revised/.git
 

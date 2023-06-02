@@ -1,5 +1,6 @@
 import os
 import argparse
+import re
 from PIL import Image
 import random
 import concurrent.futures
@@ -21,7 +22,7 @@ class Prepare:
         self.character_threshold = kwargs.get("character_threshold", 0.5)
         self.undesired_tags = kwargs.get("undesired_tags", "")
         self.tags_to_add_to_front = kwargs.get("tags_to_add_to_front", "")
-        self.tags_to_delete = kwargs.get("tags_to_delete", "")
+        self.tags_to_replace = kwargs.get("tags_to_replace", "")
 
 
     def run(self):
@@ -32,8 +33,13 @@ class Prepare:
         blip_dir = os.path.join(stable_diffusion_dir, "models/BLIP")
         finetune_dir = os.path.join(kohya_dir, "finetune")
 
+        if not self.blip.endswith((".pt", ".pth", ".bin", ".ckpt", ".safetensors")):
+            self.blip_path = None
+        else:
+            self.blip_path = self.blip
+
         convert = True  # @param {type:"boolean"}
-        random_color = True  # @param {type:"boolean"}
+        random_color = False  # @param {type:"boolean"}
         batch_size = 32
         images = [
             image
@@ -107,12 +113,15 @@ class Prepare:
         if self.anotation_method == "blip" or self.anotation_method == "both":
             max_data_loader_n_workers = 2  # @param {type:'number'}
             beam_search = True  # @param {type:'boolean'}
-            command = f"""python make_captions.py "{self.train_data_dir}" --caption_weights {self.blip_path} --batch_size {self.batch_size} {"--beam_search" if beam_search else ""} --min_length {self.min_length} --max_length {self.max_length} --caption_extension .txt --max_data_loader_n_workers {max_data_loader_n_workers}"""
+            if self.blip_path is not None:
+                command = f"""python make_captions.py "{self.train_data_dir}" --caption_weights {self.blip_path} --batch_size {self.batch_size} {"--beam_search" if beam_search else ""} --min_length {self.min_length} --max_length {self.max_length} --caption_extension .txt --max_data_loader_n_workers {max_data_loader_n_workers}"""
+            else:
+                command = f"""python make_captions.py "{self.train_data_dir}" --batch_size {self.batch_size} {"--beam_search" if beam_search else ""} --min_length {self.min_length} --max_length {self.max_length} --caption_extension .txt --max_data_loader_n_workers {max_data_loader_n_workers}"""
             subprocess.run(command, shell=True, check=True)
 
         # 4.2.2. Waifu Diffusion 1.4 Tagger V2
 
-        if self.anotation_method == "waifu":
+        if self.anotation_method == "wd14-tagger":
             max_data_loader_n_workers = 2  # @param {type:'number'}
             model = "SmilingWolf/wd-v1-4-convnextv2-tagger-v2"  # @param ["SmilingWolf/wd-v1-4-convnextv2-tagger-v2", "SmilingWolf/wd-v1-4-swinv2-tagger-v2", "SmilingWolf/wd-v1-4-convnext-tagger-v2", "SmilingWolf/wd-v1-4-vit-tagger-v2"]
             # @markdown Use the `recursive` option to process subfolders as well, useful for multi-concept training.
@@ -150,8 +159,19 @@ class Prepare:
             final_args = f"python tag_images_by_wd14_tagger.py {args}"
             subprocess.run(final_args, shell=True, check=True)
 
-        ### Combine BLIP and Waifu
+        def read_file(file_path):
+            with open(file_path, "r") as file:
+                content = file.read()
+            return content
 
+        def remove_redundant_words(content1, content2):
+            return content1.rstrip('\n') + ', ' + content2
+
+        def write_file(file_path, content):
+            with open(file_path, "w") as file:
+                file.write(content)
+
+        ### Combine BLIP and Waifu
         if self.anotation_method == "both":
             max_data_loader_n_workers = 2  # @param {type:'number'}
             model = "SmilingWolf/wd-v1-4-convnextv2-tagger-v2"  # @param ["SmilingWolf/wd-v1-4-convnextv2-tagger-v2", "SmilingWolf/wd-v1-4-swinv2-tagger-v2", "SmilingWolf/wd-v1-4-convnext-tagger-v2", "SmilingWolf/wd-v1-4-vit-tagger-v2"]
@@ -190,20 +210,6 @@ class Prepare:
             final_args = f"python tag_images_by_wd14_tagger.py {args}"
             subprocess.run(final_args, shell=True, check=True)
 
-            def read_file(file_path):
-                with open(file_path, "r") as file:
-                    content = file.read()
-                return content
-
-            def remove_redundant_words(content1, content2):
-                return content1.rstrip('\n') + ', ' + content2
-
-            def write_file(file_path, content):
-                with open(file_path, "w") as file:
-                    file.write(content)
-
-            
-
             def combine():
                 directory = self.train_data_dir
                 extension1 = ".txt"
@@ -226,38 +232,40 @@ class Prepare:
 
             combine()
 
-        def add_tag_to_front(filename, tag):
+        def add_tag_to_front(filename, tags):
             contents = read_file(filename)
 
             # add the tag
-            tag = ", ".join(tag.split())
-            tag = tag.replace("_", " ")
-            if tag in contents:
-                return
-            contents = tag + ", " + contents
+            tags = "".join(tags.split(", "))
+            contents = tags + ", " + contents
             write_file(filename, contents)
 
-        def delete_tag(filename, tag):
+        def replace_tag(filename, tags):
             contents = read_file(filename)
-            tag = ", ".join(tag.split())
-            tag = tag.replace("_", " ")
-            if tag not in contents:
-                return
-            contents = "".join([s.strip(", ") for s in contents.split(tag)])
+
+            # process the tags input into a dictionary
+            tag_dict = {}
+            tag_pairs = tags.split(", ")
+            for pair in tag_pairs:
+                old, new = pair.split(":")
+                tag_dict[old.strip()] = new.strip()
+
+            # replace tags in the contents
+            for old, new in tag_dict.items():
+                contents = re.sub(r'\b' + old + r'\b', new, contents)
             write_file(filename, contents)
+
+        if self.tags_to_replace != "":
+            for filename in os.listdir(self.train_data_dir):
+                if filename.endswith(".txt"):
+                    file_path = os.path.join(self.train_data_dir, filename)
+                    replace_tag(file_path, self.tags_to_replace)   
 
         if self.tags_to_add_to_front != "":
             for filename in os.listdir(self.train_data_dir):
-                if filename.endswith(self.caption_extension):
+                if filename.endswith(".txt"):
                     file_path = os.path.join(self.train_data_dir, filename)
-                    for tag in self.tags_to_add_to_front:
-                        add_tag_to_front(file_path, tag)
-        if self.tags_to_delete != "":
-            for filename in os.listdir(self.train_data_dir):
-                if filename.endswith(self.caption_extension):
-                    file_path = os.path.join(self.train_data_dir, filename)
-                    for tag in self.tags_to_delete:
-                        delete_tag(file_path, tag)     
+                    add_tag_to_front(file_path, self.tags_to_add_to_front)
 
 
 def setup_parser() -> argparse.ArgumentParser:

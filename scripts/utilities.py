@@ -209,10 +209,8 @@ def options_to_gradio(options, out, overrides={}):
             choices=[]
             datanames = os.listdir(os.path.join(models_dir, "BLIP"))
             for dataname in datanames:
-                if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors' or os.path.splitext(dataname)[1] == '.pth':
-                    choices.append(os.path.join(models_dir, "BLIP", dataname))
-            if len(choices)==0:
-                choices.append("No blip model !!!")
+                choices.append(os.path.join(models_dir, "BLIP", dataname))
+            choices.append("download from huggingface")
 
             # choices.append("")
             component = gr.Dropdown(
@@ -298,7 +296,7 @@ def options_to_gradio(options, out, overrides={}):
         elif key == "general_threshold":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
-                label="blip: general threshold (0-1)",
+                label="tagger: general threshold (0-1)",
                 elem_id=id,
                 interactive=True,
             ).style()
@@ -306,7 +304,7 @@ def options_to_gradio(options, out, overrides={}):
         elif key == "character_threshold":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
-                label="blip: character threshold (0-1)",
+                label="tagger: character threshold (0-1)",
                 elem_id=id,
                 interactive=True,
             ).style()
@@ -350,7 +348,7 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
-            
+
         elif type == bool:
             component = gr.Checkbox(
                 value=item["default"] if check_key(item, "default") else False,
