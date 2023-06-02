@@ -189,11 +189,8 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
-            shared.help_title_map[id] = help
-            out[key] = component
-            continue
 
-        if key=="vae":
+        elif key=="vae":
             choices=[]
             datanames = os.listdir(os.path.join(models_dir, "VAE"))
             for dataname in datanames:
@@ -207,11 +204,8 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
-            shared.help_title_map[id] = help
-            out[key] = component
-            continue
 
-        if key=="blip":
+        elif key=="blip":
             choices=[]
             datanames = os.listdir(os.path.join(models_dir, "BLIP"))
             for dataname in datanames:
@@ -228,109 +222,96 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
-            shared.help_title_map[id] = help
-            out[key] = component
-            continue
 
-        if key== "train_data":
+        elif key== "train_data":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="train/instance dataset (/root/dir/to/folder)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-        if key== "reg_data":
+        elif key== "reg_data":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="reg/class dataset (/root/dir/to/folder)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-        if key == "train_data_dir":
+        elif key == "train_data_dir":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="image folder (/root/dir/to/folder)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-        if key== "extra_sd_path":
+        elif key== "extra_sd_path":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="extra sd path (use this if not empty)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-        if key== "instance_token":
+        elif key== "instance_token":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="instance token (use if no text prompts in train dataset)",
                 elem_id=id,
                 interactive=True,
-            ).style()
-            continue    
+            ).style()   
         
-        if key == "class_token":
+        elif key == "class_token":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="class token (use if no text prompts in reg dataset)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
-        if key == "sample_prompts":
+
+        elif key == "sample_prompts":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="sample prompts (seperate by ',')",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-        if key == "max_length":
+        elif key == "max_length":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="blip: max length",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
             
-        if key == "num_samples":
+        elif key == "num_samples":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="blip: min length",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
         
-        if key == "general_threshold":
+        elif key == "general_threshold":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="blip: general threshold (0-1)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
             
-        if key == "character_threshold":
+        elif key == "character_threshold":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="blip: character threshold (0-1)",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
         
-        if key == "undesired_tags":
+        elif key == "undesired_tags":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="tagger: undesired tags (seperate by ',')",
@@ -339,26 +320,23 @@ def options_to_gradio(options, out, overrides={}):
             ).style()
             continue
 
-        if key == "tags_to_replace":
+        elif key == "tags_to_replace":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="tags to replace (old:new, seperate by ',')",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-        if key == "tags_to_add_to_front":
+        elif key == "tags_to_add_to_front":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
                 label="tags to add to front (seperate by ',')",
                 elem_id=id,
                 interactive=True,
             ).style()
-            continue
 
-
-        if type == list:
+        elif type == list:
             choices = [
                 c if c is not None else "None"
                 for c in (
@@ -372,6 +350,7 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             )
+            
         elif type == bool:
             component = gr.Checkbox(
                 value=item["default"] if check_key(item, "default") else False,

@@ -55,11 +55,6 @@ class Lora:
         self.output_dir = os.path.join(stable_diffusion_dir, "output")
         self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Lora")
         
-
-        # self.output_dir = "/root/autodl-tmp/training"
-        # self.dataset_dir = "/root/autodl-tmp/dataset"
-        # self.save_model_dir = "/root/autodl-tmp/models/Lora"
-        # self.blip_path = "/root/autodl-tmp/models/BLIP/model_large_caption.pth"
         #*************************************************
 
         if self.extra_sd_path is None or self.extra_sd_path == "":
@@ -422,7 +417,6 @@ def setup_parser() -> argparse.ArgumentParser:
     # parser.add_argument("--prepare", action="store_true", help="")
     parser.add_argument("--lora_name", type=str, default="x1", help="")
     parser.add_argument("--train_data", type=str, default="", help="absolute path to your instance images and prompts")
-
     parser.add_argument("--reg_data", type=str, default="", help="absolute path to your class images and prompts")
     parser.add_argument("--flip_aug", action="store_true", default=False, help="flip the images to augment the data")
     parser.add_argument("--resolution", type=int, default=512, help="image resolution", choices=[512, 768])

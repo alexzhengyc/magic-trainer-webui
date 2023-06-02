@@ -264,7 +264,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--anotation_method", type=str, default="blip", choices=["blip", "wd14-tagger", "both"], help="anotation method")
     
-    parser.add_argument("--train_data_dir", type=str, default="/root/dir/to/your image", help="directory for train images")
+    parser.add_argument("--train_data_dir", type=str, default="", help="directory for train images")
     parser.add_argument("--batch_size", type=int, default=2, help="batch size in inference")
 
     # parser.add_argument("--num_beams", type=int, default=1, help="num of beams in beam search ")
