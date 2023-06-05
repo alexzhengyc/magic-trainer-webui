@@ -48,7 +48,7 @@ class Dreambooth():
         extensions_dir = os.path.dirname(magic_trainer_dir)
         stable_diffusion_dir = os.path.dirname(extensions_dir)
         self.output_dir = os.path.join(stable_diffusion_dir, "output")
-        self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Lora")
+        self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Stable-diffusion")
         
         if self.extra_sd_path is None or self.extra_sd_path == "":
             self.sd_path = self.sd_model
@@ -66,7 +66,7 @@ class Dreambooth():
         self.caption_dropout_every_n_epochs = 0
 
         self.repo_dir = os.path.dirname(__file__)
-        self.training_dir = os.path.join(self.output_dir, self.lora_name)
+        self.training_dir = os.path.join(self.output_dir, self.dreambooth_name)
         self.train_data_dir = os.path.join(self.training_dir, "train_data")
         self.reg_data_dir = os.path.join(self.training_dir, "reg_data")
         self.config_dir = os.path.join(self.training_dir, "config")
@@ -360,7 +360,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--max_train_steps", type=int, default=100, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
-    parser.add_argument("--optimizer_type", type=str, default="Lion",choices=["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
+    parser.add_argument("--optimizer_type", type=str, default="Lion8bit",choices=["AdamW", "AdamW8bit", "Lion", "Lion8bit", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
     parser.add_argument("--learning_rate", type=float, default=1e-5, help="")
     parser.add_argument("--lr_scheduler", type=str, default="polynomial",choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"], help="")
     parser.add_argument("--prior_loss_weight", type=float, default=1.0, help="")
