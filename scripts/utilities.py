@@ -284,6 +284,13 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             ).style()
+        elif key == "min_length":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="blip: min length",
+                elem_id=id,
+                interactive=True,
+            ).style()
             
         elif key == "num_samples":
             component = gr.Textbox(
