@@ -5,5 +5,5 @@ fairscale
 albumentations
 voluptuous
 lion_pytorch
-bitsandbytes
+bitsandbytes>=0.38.1
 dadaptation

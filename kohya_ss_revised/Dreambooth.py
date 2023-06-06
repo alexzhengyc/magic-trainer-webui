@@ -30,6 +30,7 @@ class Dreambooth():
         self.train_repeats = kwargs.get("train_repeats", 10)
         self.reg_repeats = kwargs.get("reg_repeats", 1)
         self.max_train_steps = kwargs.get("max_train_steps", 100)
+        self.stop_train_text_encoder = kwargs.get("stop_train_text_encoder", None)
         self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio", 1)
         self.prompts = kwargs.get("sample_prompts", None)
         self.sample_every_n_steps = kwargs.get("sample_every_n_steps", 100)
@@ -207,8 +208,6 @@ class Dreambooth():
         # 5.3. Optimizer Config
 
         optimizer_args = ""  # @param {'type':'string'}
-        stop_train_text_encoder = -1 #@param {'type':'number'}
-
 
         # @title ## 5.4. Training Config
         noise_offset = 0.0  # @param {type:"number"}
@@ -227,7 +226,7 @@ class Dreambooth():
                 "optimizer_type": self.optimizer_type,
                 "learning_rate": self.learning_rate,
                 "max_grad_norm": 1.0,
-                "stop_train_text_encoder": stop_train_text_encoder if stop_train_text_encoder > 0 else None,
+                "stop_train_text_encoder": self.stop_train_text_encoder if self.stop_train_text_encoder >= 0 else None,
                 "optimizer_args": eval(optimizer_args) if optimizer_args else None,
                 "lr_scheduler": self.lr_scheduler,
                 "lr_warmup_steps": lr_warmup_steps,
@@ -247,7 +246,7 @@ class Dreambooth():
                 "save_last_n_epochs": None,
                 "save_state": save_state,
                 "save_last_n_epochs_state": None,
-                "resume": self.resume_path if self.resume_path else None,
+                # "resume": self.resume_path if self.resume_path else None,
                 "train_batch_size": self.train_batch_size,
                 "max_token_length": 225,
                 "mem_eff_attn": False,
@@ -359,6 +358,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train_repeats", type=int, default=10, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--max_train_steps", type=int, default=100, help="")
+    parser.add_argument("--stop_train_text_encoder", type=int, default=-1, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
     parser.add_argument("--optimizer_type", type=str, default="Lion8bit",choices=["AdamW", "AdamW8bit", "Lion", "Lion8bit", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
     parser.add_argument("--learning_rate", type=float, default=1e-5, help="")
@@ -371,7 +371,7 @@ def setup_parser() -> argparse.ArgumentParser:
         help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
-    parser.add_argument("--sample_every_n_steps", type=float, default=1, help="")
+    parser.add_argument("--sample_every_n_steps", type=float, default=100, help="")
 
     return parser
 

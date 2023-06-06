@@ -1,6 +1,7 @@
 import launch
 import os
 import pkg_resources
+from packaging import version as packaging_version
 import subprocess
 
 req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
@@ -9,23 +10,38 @@ with open(req_file) as file:
         try:
             package = package.strip()
             if '==' in package:
-                package_name, package_version = package.split('==')
-                installed_version = pkg_resources.get_distribution(package_name).version
-                if installed_version != package_version:
-                    launch.run_pip(f"install {package}", f"magic-trainer-webui requirement: {package_name} package not matched! changing version from {installed_version} to {package_version}")
-            elif '<=' in package:
-                package_name, package_version = package.split('<=')
-                installed_version = pkg_resources.get_distribution(package_name).version
-                if pkg_resources.parse_version(installed_version) > pkg_resources.parse_version(package_version):
-                    launch.run_pip(f"install {package}", f"magic-trainer-webui requirement: {package_name} package is too new! changing version from {installed_version} to {package_version}")
+                operator = '=='
             elif '>=' in package:
-                package_name, package_version = package.split('>=')
-                installed_version = pkg_resources.get_distribution(package_name).version
-                if pkg_resources.parse_version(installed_version) < pkg_resources.parse_version(package_version):
-                    launch.run_pip(f"install {package}", f"magic-trainer-webui requirement: {package_name} package is too old! changing version from {installed_version} to {package_version}")
-            
-            elif not launch.is_installed(package):
-                launch.run_pip(f"install {package}", f"magic-trainer-webui requirement: {package}")
+                operator = '>='
+            elif '<=' in package:
+                operator = '<='
+            else:
+                continue  # Add more conditions for other comparison operators.
+
+            package_name, package_version = package.split(operator)
+
+            try:
+                installed_version_str = pkg_resources.get_distribution(package_name).version
+                installed_version = packaging_version.parse(installed_version_str)
+            except pkg_resources.DistributionNotFound:
+                launch.run_pip(f"install {package_name}=={package_version}", f"magic-trainer-webui requirement: {package_name}")
+                continue
+
+            package_version = packaging_version.parse(package_version)
+
+            if operator == '==':
+                if installed_version != package_version:
+                    message = f"package not matched! changing version from {installed_version} to {package_version}"
+                    launch.run_pip(f"install {package_name}=={package_version}", f"magic-trainer-webui requirement: {package_name} {message}")
+            elif operator == '>=':
+                if installed_version < package_version:
+                    message = f"package is too old! changing version from {installed_version} to {package_version}"
+                    launch.run_pip(f"install {package_name}=={package_version}", f"magic-trainer-webui requirement: {package_name} {message}")
+            elif operator == '<=':
+                if installed_version > package_version:
+                    message = f"package is too new! changing version from {installed_version} to {package_version}"
+                    launch.run_pip(f"install {package_name}=={package_version}", f"magic-trainer-webui requirement: {package_name} {message}")
+
                 
         except Exception as e:
             print(e)

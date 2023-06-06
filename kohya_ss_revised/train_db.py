@@ -44,7 +44,7 @@ def train(args):
         ignored = ["train_data_dir", "reg_data_dir"]
         if any(getattr(args, attr) is not None for attr in ignored):
             print(
-                "ignore following options because config file is found: {0} / 設定ファイルが利用されるため以下のオプションは無視されます: {0}".format(
+                "ignore following options because config file is found: {0}".format(
                     ", ".join(ignored)
                 )
             )
@@ -75,15 +75,12 @@ def train(args):
             train_dataset_group.is_latent_cacheable()
         ), "when caching latents, either color_aug or random_crop cannot be used / latentをキャッシュするときはcolor_augとrandom_cropは使えません"
 
-    # acceleratorを準備する
-    print("prepare accelerator")
+    # accelerator
+    # print("prepare accelerator")
 
     if args.gradient_accumulation_steps > 1:
         print(
             f"gradient_accumulation_steps is {args.gradient_accumulation_steps}. accelerate does not support gradient_accumulation_steps when training multiple models (U-Net and Text Encoder), so something might be wrong"
-        )
-        print(
-            f"gradient_accumulation_stepsが{args.gradient_accumulation_steps}に設定されています。accelerateは複数モデル（U-NetおよびText Encoder）の学習時にgradient_accumulation_stepsをサポートしていないため結果は未知数です"
         )
 
     accelerator, unwrap_model = train_util.prepare_accelerator(args)
@@ -127,7 +124,7 @@ def train(args):
         accelerator.wait_for_everyone()
 
     # 学習を準備する：モデルを適切な状態にする
-    train_text_encoder = args.stop_text_encoder_training is None or args.stop_text_encoder_training >= 0
+    train_text_encoder = args.stop_train_text_encoder is None or args.stop_train_text_encoder >= 0
     unet.requires_grad_(True)  # 念のため追加
     text_encoder.requires_grad_(train_text_encoder)
     if not train_text_encoder:
@@ -168,13 +165,13 @@ def train(args):
         args.max_train_steps = args.max_train_epochs * math.ceil(
             len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps
         )
-        print(f"override steps. steps for {args.max_train_epochs} epochs is / 指定エポックまでのステップ数: {args.max_train_steps}")
+        print(f"override steps. steps for {args.max_train_epochs} epochs is : {args.max_train_steps}")
 
     # データセット側にも学習ステップを送信
     train_dataset_group.set_max_train_steps(args.max_train_steps)
 
-    if args.stop_text_encoder_training is None:
-        args.stop_text_encoder_training = args.max_train_steps + 1  # do not stop until end
+    if args.stop_train_text_encoder is None:
+        args.stop_train_text_encoder = args.max_train_steps + 1  # do not stop until end
 
     # lr schedulerを用意する TODO gradient_accumulation_stepsの扱いが何かおかしいかもしれない。後で確認する
     lr_scheduler = train_util.get_scheduler_fix(args, optimizer, accelerator.num_processes)
@@ -183,7 +180,7 @@ def train(args):
     if args.full_fp16:
         assert (
             args.mixed_precision == "fp16"
-        ), "full_fp16 requires mixed precision='fp16' / full_fp16を使う場合はmixed_precision='fp16'を指定してください。"
+        ), "full_fp16 requires mixed precision='fp16' "
         print("enable full fp16 training.")
         unet.to(weight_dtype)
         text_encoder.to(weight_dtype)
@@ -217,15 +214,15 @@ def train(args):
 
     # 学習する
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
-    print("running training / 学習開始")
-    print(f"  num train images * repeats / 学習画像の数×繰り返し回数: {train_dataset_group.num_train_images}")
-    print(f"  num reg images / 正則化画像の数: {train_dataset_group.num_reg_images}")
-    print(f"  num batches per epoch / 1epochのバッチ数: {len(train_dataloader)}")
-    print(f"  num epochs / epoch数: {num_train_epochs}")
-    print(f"  batch size per device / バッチサイズ: {args.train_batch_size}")
-    print(f"  total train batch size (with parallel & distributed & accumulation) / 総バッチサイズ（並列学習、勾配合計含む）: {total_batch_size}")
-    print(f"  gradient ccumulation steps / 勾配を合計するステップ数 = {args.gradient_accumulation_steps}")
-    print(f"  total optimization steps / 学習ステップ数: {args.max_train_steps}")
+    print("running training")
+    print(f"  num train images * repeats : {train_dataset_group.num_train_images}")
+    print(f"  num reg images : {train_dataset_group.num_reg_images}")
+    print(f"  num batches per epoch : {len(train_dataloader)}")
+    print(f"  num epochs : {num_train_epochs}")
+    print(f"  batch size per device : {args.train_batch_size}")
+    print(f"  total train batch size (with parallel & distributed & accumulation) : {total_batch_size}")
+    print(f"  gradient ccumulation steps = {args.gradient_accumulation_steps}")
+    print(f"  total optimization steps : {args.max_train_steps}")
 
     progress_bar = tqdm(range(args.max_train_steps), smoothing=0, disable=not accelerator.is_local_main_process, desc="steps")
     global_step = 0
@@ -246,13 +243,13 @@ def train(args):
         # 指定したステップ数までText Encoderを学習する：epoch最初の状態
         unet.train()
         # train==True is required to enable gradient_checkpointing
-        if args.gradient_checkpointing or global_step < args.stop_text_encoder_training:
+        if args.gradient_checkpointing or global_step < args.stop_train_text_encoder:
             text_encoder.train()
 
         for step, batch in enumerate(train_dataloader):
             current_step.value = global_step
             # 指定したステップ数でText Encoderの学習を止める
-            if global_step == args.stop_text_encoder_training:
+            if global_step == args.stop_train_text_encoder:
                 print(f"stop text encoder training at step {global_step}")
                 if not args.gradient_checkpointing:
                     text_encoder.train(False)
@@ -276,7 +273,7 @@ def train(args):
                     noise = pyramid_noise_like(noise, latents.device, args.multires_noise_iterations, args.multires_noise_discount)
 
                 # Get the text embedding for conditioning
-                with torch.set_grad_enabled(global_step < args.stop_text_encoder_training):
+                with torch.set_grad_enabled(global_step < args.stop_train_text_encoder):
                     if args.weighted_captions:
                         encoder_hidden_states = get_weighted_text_embeddings(
                             tokenizer,
@@ -447,14 +444,20 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no_token_padding",
         action="store_true",
-        help="disable token padding (same as Diffuser's DreamBooth) / トークンのpaddingを無効にする（Diffusers版DreamBoothと同じ動作）",
+        help="disable token padding (same as Diffuser's DreamBooth)",
     )
     parser.add_argument(
-        "--stop_text_encoder_training",
+        "--stop_train_text_encoder",
         type=int,
         default=None,
-        help="steps to stop text encoder training, -1 for no training / Text Encoderの学習を止めるステップ数、-1で最初から学習しない",
+        help="steps to stop text encoder training, -1 for no training ",
     )
+    # parser.add_argument(
+    #     "--train_text_encoder",
+    #     action="store_true",
+    #     default=True,
+    #     help="steps to stop text encoder training, -1 for no training ",
+    # )
 
     return parser
 

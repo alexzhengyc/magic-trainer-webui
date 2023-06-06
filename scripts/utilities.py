@@ -276,7 +276,13 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             ).style()
-
+        elif key == "stop_train_text_encoder":
+            component = gr.Textbox(
+                value=item["default"] if check_key(item, "default") else "",
+                label="steps to stop training text encoder, -1 --always, 0 --never",
+                elem_id=id,
+                interactive=True,
+            ).style()
         elif key == "max_length":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
