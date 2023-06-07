@@ -272,7 +272,7 @@ def options_to_gradio(options, out, overrides={}):
         elif key == "sample_prompts":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
-                label="sample prompts (seperate by ',')",
+                label="sample prompts (seperate by '|')",
                 elem_id=id,
                 interactive=True,
             ).style()
@@ -297,15 +297,6 @@ def options_to_gradio(options, out, overrides={}):
                 elem_id=id,
                 interactive=True,
             ).style()
-            
-        elif key == "num_samples":
-            component = gr.Textbox(
-                value=item["default"] if check_key(item, "default") else "",
-                label="blip: min length",
-                elem_id=id,
-                interactive=True,
-            ).style()
-        
         elif key == "general_threshold":
             component = gr.Textbox(
                 value=item["default"] if check_key(item, "default") else "",
