@@ -7,8 +7,8 @@ import sys
 import gradio as gr
 
 import scripts.shared as shared
-from scripts.shared import ROOT_DIR
-
+from scripts.shared import ROOT_DIR,SD_DIR
+MODEL_DIR=os.path.join(SD_DIR,"models")
 python = sys.executable
 
 
@@ -175,7 +175,7 @@ def options_to_gradio(options, out, overrides={}):
         
         if key=="sd_model":
             choices=[]
-            # datanames = os.listdir(os.path.join(models_dir, "Stable-diffusion"))
+            # datanames = os.listdir(os.path.join(MODEL_DIR, "Stable-diffusion"))
             datanames = os.listdir("/root/stable-diffusion-webui/models/Stable-diffusion")
             for dataname in datanames:
                 # if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
@@ -192,7 +192,7 @@ def options_to_gradio(options, out, overrides={}):
 
         elif key=="vae":
             choices=[]
-            datanames = os.listdir(os.path.join(models_dir, "VAE"))
+            datanames = os.listdir(os.path.join(MODEL_DIR, "VAE"))
             for dataname in datanames:
                 if os.path.splitext(dataname)[1] == '.ckpt' or os.path.splitext(dataname)[1] == '.safetensors':
                     choices.append(os.path.join(models_dir, "VAE", dataname))
