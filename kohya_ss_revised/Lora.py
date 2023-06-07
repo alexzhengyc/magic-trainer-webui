@@ -45,7 +45,6 @@ class Lora:
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
         self.flip_aug = kwargs.get("flip_aug", False)
 
-
         ## TODO: change to dir in stable-diffusion-webui
         self.project_name = self.lora_name
         kohya_dir = os.path.dirname(os.path.realpath(__file__))
@@ -54,14 +53,14 @@ class Lora:
         stable_diffusion_dir = os.path.dirname(extensions_dir)
         self.output_dir = os.path.join(stable_diffusion_dir, "output")
         self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Lora")
-        
-        #*************************************************
+
+        # *************************************************
 
         if self.extra_sd_path is None or self.extra_sd_path == "":
             self.sd_path = self.sd_model
         else:
             self.sd_path = self.extra_sd_path
-        if self.vae == "" or self.vae=="None":
+        if self.vae == "" or self.vae == "None":
             self.vae = None
         self.keep_tokens = 0
         self.caption_extension = ".txt"
@@ -123,7 +122,6 @@ class Lora:
                 print(f"Deleting file {item} from {self.train_data_dir}")
                 os.remove(os.path.join(self.train_data_dir, item))
 
-
     def train(self):
         lr_scheduler_num_cycles = 0  # @param {'type':'number'}
         lr_scheduler_power = 1
@@ -149,7 +147,6 @@ class Lora:
         gradient_checkpointing = False  # @param {type:"boolean"}
         gradient_accumulation_steps = 1  # @param {type:"number"}
         seed = -1  # @param {type:"number"}
-
 
         config = {
             "general": {
@@ -263,29 +260,21 @@ class Lora:
         config = {
             "model_arguments": {
                 "v2": self.v2,
-                "v_parameterization": self.v_parameterization
-                if self.v2 and self.v_parameterization
-                else False,
+                "v_parameterization": self.v_parameterization if self.v2 and self.v_parameterization else False,
                 "pretrained_model_name_or_path": self.sd_path,
                 "vae": self.vae,
             },
             "additional_network_arguments": {
                 "no_metadata": False,
                 "unet_lr": float(self.unet_lr) if self.train_unet else None,
-                "text_encoder_lr": float(self.text_encoder_lr)
-                if self.train_text_encoder
-                else None,
+                "text_encoder_lr": float(self.text_encoder_lr) if self.train_text_encoder else None,
                 "network_weights": network_weight,
                 "network_module": network_module,
                 "network_dim": self.network_dim,
                 "network_alpha": self.network_alpha,
                 "network_args": network_args,
-                "network_train_unet_only": True
-                if self.train_unet and not self.train_text_encoder
-                else False,
-                "network_train_text_encoder_only": True
-                if self.train_text_encoder and not self.train_unet
-                else False,
+                "network_train_unet_only": True if self.train_unet and not self.train_text_encoder else False,
+                "network_train_text_encoder_only": True if self.train_text_encoder and not self.train_unet else False,
                 "training_comment": None,
             },
             "optimizer_arguments": {
@@ -295,12 +284,8 @@ class Lora:
                 "optimizer_args": eval(optimizer_args) if optimizer_args else None,
                 "lr_scheduler": self.lr_scheduler,
                 "lr_warmup_steps": lr_warmup_steps,
-                "lr_scheduler_num_cycles": lr_scheduler_num_cycles
-                if self.lr_scheduler == "cosine_with_restarts"
-                else None,
-                "lr_scheduler_power": lr_scheduler_power
-                if self.lr_scheduler == "polynomial"
-                else None,
+                "lr_scheduler_num_cycles": lr_scheduler_num_cycles if self.lr_scheduler == "cosine_with_restarts" else None,
+                "lr_scheduler_power": lr_scheduler_power if self.lr_scheduler == "polynomial" else None,
             },
             "dataset_arguments": {
                 "cache_latents": True,
@@ -310,12 +295,8 @@ class Lora:
                 "output_dir": self.save_model_dir,
                 "output_name": self.project_name,
                 "save_precision": save_precision,
-                "save_every_n_epochs": self.save_every_n_epochs
-                if self.save_every_n_epochs
-                else None,
-                "save_n_epoch_ratio": self.sample_n_epoch_ratio
-                if self.sample_n_epoch_ratio
-                else None,
+                "save_every_n_epochs": self.save_every_n_epochs if self.save_every_n_epochs else None,
+                "save_n_epoch_ratio": self.sample_n_epoch_ratio if self.sample_n_epoch_ratio else None,
                 "save_last_n_epochs": None,
                 "save_state": None,
                 "save_last_n_epochs_state": None,
@@ -370,13 +351,10 @@ class Lora:
 
         final_prompts = []
         self.prompts = self.prompts.split(",")
-            
+
         for prompt in self.prompts:
             final_prompts.append(
-                # f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
-                # if self.add_token_to_caption
-                # f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
-                prompt
+                f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}" if pre else f"{prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
             )
         with open(prompt_path, "w") as file:
             # Write each string to the file on a new line
@@ -389,7 +367,7 @@ class Lora:
         dataset_config = os.path.join(self.config_dir, "dataset_config.toml")
 
         os.chdir(self.repo_dir)
-        command = f"""accelerate launch --config_file={self.accelerate_config} --num_cpu_threads_per_process=1 train_network.py --sample_prompts={sample_prompt} --dataset_config={dataset_config} --config_file={config_file}"""
+        command = f'''accelerate launch --config_file={self.accelerate_config} --num_cpu_threads_per_process=1 train_network.py --sample_prompts={sample_prompt} --dataset_config={dataset_config} --config_file={config_file}'''
 
         subprocess.run(command, shell=True, check=True)
 
@@ -406,11 +384,34 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     # parser.add_argument("--prepare", action="store_true", help="")
     parser.add_argument("--lora_name", type=str, default="x1", help="")
-    parser.add_argument("--train_data", type=str, default="", help="absolute path to your instance images and prompts")
-    parser.add_argument("--reg_data", type=str, default="", help="absolute path to your class images and prompts")
-    parser.add_argument("--flip_aug", action="store_true", default=False, help="flip the images to augment the data")
-    parser.add_argument("--resolution", type=int, default=512, help="image resolution", choices=[512, 768])
-    parser.add_argument("--v2_model", action="store_true", help="if training a sd 2.0/2.1 model")
+    parser.add_argument(
+        "--train_data",
+        type=str,
+        default="",
+        help="absolute path to your instance images and prompts",
+    )
+    parser.add_argument(
+        "--reg_data",
+        type=str,
+        default="",
+        help="absolute path to your class images and prompts",
+    )
+    parser.add_argument(
+        "--flip_aug",
+        action="store_true",
+        default=False,
+        help="flip the images to augment the data",
+    )
+    parser.add_argument(
+        "--resolution",
+        type=int,
+        default=512,
+        help="image resolution",
+        choices=[512, 768],
+    )
+    parser.add_argument(
+        "--v2_model", action="store_true", help="if training a sd 2.0/2.1 model"
+    )
     parser.add_argument(
         "--sd_model",
         type=str,
@@ -439,10 +440,38 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--network_alpha", type=int, default=32, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
     parser.add_argument("--lowram", action="store_true", default=False, help="")
-    parser.add_argument("--optimizer_type", type=str, default="Lion",choices=["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "AdaFactor", "DAdaptation"], help="")
+    parser.add_argument(
+        "--optimizer_type",
+        type=str,
+        default="Lion",
+        choices=[
+            "AdamW",
+            "AdamW8bit",
+            "Lion",
+            "SGDNesterov",
+            "SGDNesterov8bit",
+            "AdaFactor",
+            "DAdaptation",
+        ],
+        help="",
+    )
     parser.add_argument("--unet_lr", type=float, default=1e-5, help="")
     parser.add_argument("--text_encoder_lr", type=float, default=0.5e-5, help="")
-    parser.add_argument("--lr_scheduler", type=str, default="polynomial",choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"], help="")
+    parser.add_argument(
+        "--lr_scheduler",
+        type=str,
+        default="polynomial",
+        choices=[
+            "linear",
+            "cosine",
+            "cosine_with_restarts",
+            "polynomial",
+            "constant",
+            "constant_with_warmup",
+            "adafactor",
+        ],
+        help="",
+    )
     parser.add_argument("--prior_loss_weight", type=float, default=1.0, help="")
     parser.add_argument(
         "--sample_prompts",

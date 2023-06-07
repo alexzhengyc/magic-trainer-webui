@@ -433,17 +433,17 @@ def get_block_dims_and_alphas(
             len(block_dims) == num_total_blocks
         ), f"block_dims must have {num_total_blocks} elements / block_dimsは{num_total_blocks}個指定してください"
     else:
-        print(f"block_dims is not specified. all dims are set to {network_dim} / block_dimsが指定されていません。すべてのdimは{network_dim}になります")
+        print(f"block_dims is not specified. all dims are set to {network_dim} ")
         block_dims = [network_dim] * num_total_blocks
 
     if block_alphas is not None:
         block_alphas = parse_floats(block_alphas)
         assert (
             len(block_alphas) == num_total_blocks
-        ), f"block_alphas must have {num_total_blocks} elements / block_alphasは{num_total_blocks}個指定してください"
+        ), f"block_alphas must have {num_total_blocks} elements "
     else:
         print(
-            f"block_alphas is not specified. all alphas are set to {network_alpha} / block_alphasが指定されていません。すべてのalphaは{network_alpha}になります"
+            f"block_alphas is not specified. all alphas are set to {network_alpha}"
         )
         block_alphas = [network_alpha] * num_total_blocks
 
@@ -452,24 +452,24 @@ def get_block_dims_and_alphas(
         conv_block_dims = parse_ints(conv_block_dims)
         assert (
             len(conv_block_dims) == num_total_blocks
-        ), f"conv_block_dims must have {num_total_blocks} elements / conv_block_dimsは{num_total_blocks}個指定してください"
+        ), f"conv_block_dims must have {num_total_blocks} elements "
 
         if conv_block_alphas is not None:
             conv_block_alphas = parse_floats(conv_block_alphas)
             assert (
                 len(conv_block_alphas) == num_total_blocks
-            ), f"conv_block_alphas must have {num_total_blocks} elements / conv_block_alphasは{num_total_blocks}個指定してください"
+            ), f"conv_block_alphas must have {num_total_blocks} elements"
         else:
             if conv_alpha is None:
                 conv_alpha = 1.0
             print(
-                f"conv_block_alphas is not specified. all alphas are set to {conv_alpha} / conv_block_alphasが指定されていません。すべてのalphaは{conv_alpha}になります"
+                f"conv_block_alphas is not specified. all alphas are set to {conv_alpha} "
             )
             conv_block_alphas = [conv_alpha] * num_total_blocks
     else:
         if conv_dim is not None:
             print(
-                f"conv_dim/alpha for all blocks are set to {conv_dim} and {conv_alpha} / すべてのブロックのconv_dimとalphaは{conv_dim}および{conv_alpha}になります"
+                f"conv_dim/alpha for all blocks are set to {conv_dim} and {conv_alpha}"
             )
             conv_block_dims = [conv_dim] * num_total_blocks
             conv_block_alphas = [conv_alpha] * num_total_blocks
@@ -509,7 +509,7 @@ def get_block_lr_weight(
             return [0.0 + base_lr] * max_len
         else:
             print(
-                "Unknown lr_weight argument %s is used. Valid arguments:  / 不明なlr_weightの引数 %s が使われました。有効な引数:\n\tcosine, sine, linear, reverse_linear, zeros"
+                "Unknown lr_weight argument %s is used. Valid arguments:  \n\tcosine, sine, linear, reverse_linear, zeros"
                 % (name)
             )
             return None
@@ -521,13 +521,11 @@ def get_block_lr_weight(
 
     if (up_lr_weight != None and len(up_lr_weight) > max_len) or (down_lr_weight != None and len(down_lr_weight) > max_len):
         print("down_weight or up_weight is too long. Parameters after %d-th are ignored." % max_len)
-        print("down_weightもしくはup_weightが長すぎます。%d個目以降のパラメータは無視されます。" % max_len)
         up_lr_weight = up_lr_weight[:max_len]
         down_lr_weight = down_lr_weight[:max_len]
 
     if (up_lr_weight != None and len(up_lr_weight) < max_len) or (down_lr_weight != None and len(down_lr_weight) < max_len):
         print("down_weight or up_weight is too short. Parameters after %d-th are filled with 1." % max_len)
-        print("down_weightもしくはup_weightが短すぎます。%d個目までの不足したパラメータは1で補われます。" % max_len)
 
         if down_lr_weight != None and len(down_lr_weight) < max_len:
             down_lr_weight = down_lr_weight + [1.0] * (max_len - len(down_lr_weight))
@@ -535,12 +533,12 @@ def get_block_lr_weight(
             up_lr_weight = up_lr_weight + [1.0] * (max_len - len(up_lr_weight))
 
     if (up_lr_weight != None) or (mid_lr_weight != None) or (down_lr_weight != None):
-        print("apply block learning rate / 階層別学習率を適用します。")
+        print("apply block learning rate ")
         if down_lr_weight != None:
             down_lr_weight = [w if w > zero_threshold else 0 for w in down_lr_weight]
-            print("down_lr_weight (shallower -> deeper, 浅い層->深い層):", down_lr_weight)
+            print("down_lr_weight (shallower -> deeper):", down_lr_weight)
         else:
-            print("down_lr_weight: all 1.0, すべて1.0")
+            print("down_lr_weight: all 1.0")
 
         if mid_lr_weight != None:
             mid_lr_weight = mid_lr_weight if mid_lr_weight > zero_threshold else 0
@@ -550,9 +548,9 @@ def get_block_lr_weight(
 
         if up_lr_weight != None:
             up_lr_weight = [w if w > zero_threshold else 0 for w in up_lr_weight]
-            print("up_lr_weight (deeper -> shallower, 深い層->浅い層):", up_lr_weight)
+            print("up_lr_weight (deeper -> shallower):", up_lr_weight)
         else:
-            print("up_lr_weight: all 1.0, すべて1.0")
+            print("up_lr_weight: all 1.0")
 
     return down_lr_weight, mid_lr_weight, up_lr_weight
 
@@ -773,7 +771,7 @@ class LoRANetwork(torch.nn.Module):
         skipped = skipped_te + skipped_un
         if varbose and len(skipped) > 0:
             print(
-                f"because block_lr_weight is 0 or dim (rank) is 0, {len(skipped)} LoRA modules are skipped / block_lr_weightまたはdim (rank)が0の為、次の{len(skipped)}個のLoRAモジュールはスキップされます:"
+                f"because block_lr_weight is 0 or dim (rank) is 0, {len(skipped)} LoRA modules are skipped :"
             )
             for name in skipped:
                 print(f"\t{name}")
