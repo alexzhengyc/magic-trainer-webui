@@ -48,7 +48,7 @@ class Dreambooth():
         magic_trainer_dir = os.path.dirname(kohya_dir)
         extensions_dir = os.path.dirname(magic_trainer_dir)
         stable_diffusion_dir = os.path.dirname(extensions_dir)
-        self.output_dir = os.path.join(stable_diffusion_dir, "output")
+        self.output_dir = os.path.join(stable_diffusion_dir, "magic-trainer-workspace")
         self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Stable-diffusion")
         
         if self.extra_sd_path is None or self.extra_sd_path == "":
@@ -294,7 +294,7 @@ class Dreambooth():
         write_file(config_path, config_str)
 
         final_prompts = []
-        self.prompts = self.prompts.split(",")
+        self.prompts = self.prompts.split("|")
         for prompt in self.prompts:
             final_prompts.append(
                 # f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
@@ -367,7 +367,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--sample_prompts",
         type=str,
-        default="1 zwx person in white shirt, 1 zwx person in black jacket",
+        default="1 zwx person in white shirt | 1 zwx person in black jacket",
         help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")

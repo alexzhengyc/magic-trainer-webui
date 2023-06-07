@@ -27,6 +27,7 @@ class Lora:
         self.train_repeats = kwargs.get("train_repeats", 10)
         self.reg_repeats = kwargs.get("reg_repeats", 1)
         self.num_epochs = kwargs.get("num_epochs", 1)
+        self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
         self.network_dim = kwargs.get("network_dim", 64)
         self.network_alpha = kwargs.get("network_alpha", 32)
         self.train_unet = kwargs.get("train_unet", True)
@@ -38,7 +39,6 @@ class Lora:
         self.optimizer_type = kwargs.get("optimizer_type", "DAdaptation")
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
         self.resolution = kwargs.get("resolution", 512)
-        self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
         self.sample_n_epoch_ratio = kwargs.get("sample_n_epoch_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 2)
         self.lowram = kwargs.get("lowram", False)
@@ -51,7 +51,7 @@ class Lora:
         magic_trainer_dir = os.path.dirname(kohya_dir)
         extensions_dir = os.path.dirname(magic_trainer_dir)
         stable_diffusion_dir = os.path.dirname(extensions_dir)
-        self.output_dir = os.path.join(stable_diffusion_dir, "output")
+        self.output_dir = os.path.join(stable_diffusion_dir, "magic-trainer-workspace")
         self.save_model_dir = os.path.join(stable_diffusion_dir, "models/Lora")
 
         # *************************************************
@@ -350,8 +350,7 @@ class Lora:
         write_file(config_path, config_str)
 
         final_prompts = []
-        self.prompts = self.prompts.split(",")
-
+        self.prompts = self.prompts.split("|")
         for prompt in self.prompts:
             final_prompts.append(
                 f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}" if pre else f"{prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
@@ -436,6 +435,7 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train_repeats", type=int, default=10, help="")
     parser.add_argument("--reg_repeats", type=int, default=1, help="")
     parser.add_argument("--num_epochs", type=int, default=1, help="")
+    parser.add_argument("--save_every_n_epochs", type=int, default=1, help="")
     parser.add_argument("--network_dim", type=int, default=64, help="")
     parser.add_argument("--network_alpha", type=int, default=32, help="")
     parser.add_argument("--train_batch_size", type=int, default=1, help="")
@@ -476,11 +476,11 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--sample_prompts",
         type=str,
-        default="1 zwx person in white shirt, 1 zwx person in black jacket",
+        default="1 zwx person in white shirt | 1 zwx person in black jacket",
         help="input all your prompts here, separated by ','",
     )
     parser.add_argument("--images_per_prompt", type=int, default=1, help="")
-    parser.add_argument("--sample_n_epoch_ratio", type=float, default=1, help="")
+    # parser.add_argument("--sample_n_epoch_ratio", type=float, default=1, help="")
 
     return parser
 
