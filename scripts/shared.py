@@ -17,6 +17,7 @@ ROOT_DIR = (
     if is_webui_extension()
     else os.path.dirname(os.path.dirname(__file__))
 )
+SD_DIR = os.path.abspath(os.path.join(ROOT_DIR, "../.."))
 
 current_tab = None
 loaded_tabs = []
