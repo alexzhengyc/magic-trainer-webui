@@ -33,7 +33,7 @@ def create_ui(css):
                     continue
                 with gr.TabItem(category):
                     for lib in tabs:
-                        # try:
+                        try:
                             module_path = path_to_module(lib)
                             module_name = module_path.replace(".", "_")
 
@@ -42,9 +42,9 @@ def create_ui(css):
                             shared.loaded_tabs.append(module_name)
 
                             module.create_ui()
-                        # except Exception as e:
-                        #     print(f"Failed to load {module_path}")
-                        #     print(e)
+                        except Exception as e:
+                            print(f"Failed to load {module_path}")
+                            print(e)
 
             sys.path.remove(dir)
             with gr.TabItem("terminal"):
