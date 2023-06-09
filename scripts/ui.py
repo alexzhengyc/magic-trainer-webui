@@ -51,7 +51,7 @@ def create_ui(css):
                 gr.HTML('<div id="magic_trainer_webui__terminal_outputs"></div>')
 
             with gr.TabItem("tutorial"):
-                gr.HTML('<div id="magic_trainer_webui___tutorial"></div>')
+                gr.HTML('<div id="magic_trainer_webui__tutorial"></div>')
                 # clear_button = gr.Button(
                 #     "Clear all",
                 #     variant="primary",
