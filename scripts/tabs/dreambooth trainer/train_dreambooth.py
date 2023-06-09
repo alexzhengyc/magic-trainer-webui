@@ -28,6 +28,9 @@ def create_ui():
 
     with gr.Column():
         init_runner = initialize_runner(script_file, get_templates, get_options)
+        with gr.Box():
+            with gr.Row():
+                init_id = presets.create_ui("dreambooth", get_templates, get_options)
         with gr.Row():
             with gr.Box():
                 with gr.Column():   
@@ -37,4 +40,4 @@ def create_ui():
                     options_to_gradio(dict_slice(templates,2), network_options)
 
     init_runner()
-    # init_id()
+    init_id()
